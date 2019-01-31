@@ -59,15 +59,15 @@ namespace Unofficial.SignalR.Protobuf
 
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
         {
-            var indexBytes = input.Slice(0, 4).ToArray();
-            var index = BitConverter.ToUInt16(indexBytes);
+            var indexBytes = input.Slice(0, 2).ToArray();
+            var index = BitConverter.ToUInt16(indexBytes, 0);
             if (index >= _messageParsers.Count)
             {
                 message = null;
                 return false;
             }
 
-            var messageSequence = input.Slice(4);
+            var messageSequence = input.Slice(2);
             using (var messageStream = messageSequence.AsStream())
             {
                 message = (HubMessage) _messageParsers[index].ParseFrom(messageStream);
