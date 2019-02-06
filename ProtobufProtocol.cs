@@ -2,6 +2,8 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using Google.Protobuf;
 using Microsoft.AspNetCore.Connections;
@@ -25,12 +27,7 @@ namespace Unofficial.SignalR.Protobuf
 
             return (MessageParser) parser;
         }
-
-        public string Name => nameof(ProtobufProtocol);
-        public int Version => 1;
-        public TransferFormat TransferFormat => TransferFormat.Binary;
-        public bool IsVersionSupported(int version) => true;
-
+        
         private readonly JsonHubProtocol _jsonHubProtocol = new JsonHubProtocol();
         private readonly List<MessageParser> _messageParsers = new List<MessageParser>();
         private readonly Dictionary<Type, ushort> _messageToIndexMap = new Dictionary<Type, ushort>();
@@ -46,96 +43,115 @@ namespace Unofficial.SignalR.Protobuf
                     continue;
                 }
 
-                if (!messageType.IsSubclassOf(typeof(HubMessage)))
-                {
-                    continue;
-                }
-
                 _messageParsers.Add(GetParser(messageType));
                 _messageToIndexMap[messageType] = i;
             }
         }
 
+        public string Name => nameof(ProtobufProtocol);
+        public int Version => 1;
+        public TransferFormat TransferFormat => TransferFormat.Binary;
+        public bool IsVersionSupported(int version) => true;
+        
+        public ReadOnlyMemory<byte> GetMessageBytes(HubMessage message)
+        {
+            return HubProtocolExtensions.GetMessageBytes(this, message);
+        }
+
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
         {
-            if (message is IMessage protobufMessage)
+            if (message is InvocationMessage invocationMessage)
             {
-                using (var outputStream = output.AsStream())
+                var numberOfProtobufModels = invocationMessage.Arguments.Count(argument => argument is IMessage);
+                if (numberOfProtobufModels != invocationMessage.Arguments.Length)
                 {
-                    outputStream.WriteByte(0);
+                    throw new ArgumentException($"{nameof(ProtobufProtocol)} does not currently support a mix of {nameof(IMessage)} and non-{nameof(IMessage)}.");
+                }
+                
+                using (var outputStream = output.AsStream())
+                using (var binaryWriter = new BinaryWriter(outputStream))
+                {
+                    // isProtobuf byte
+                    binaryWriter.Write((byte) 1);
+                    // InvocationId
+                    binaryWriter.Write(invocationMessage.InvocationId);
+                    // Target
+                    binaryWriter.Write(invocationMessage.Target);
+                    // Count of Headers
+                    binaryWriter.Write((ushort) invocationMessage.Headers.Count);
+                    // Header keys and values
+                    foreach (var header in invocationMessage.Headers)
+                    {
+                        binaryWriter.Write(header.Key);
+                        binaryWriter.Write(header.Value);
+                    }
+                    // Count of arguments
+                    binaryWriter.Write((byte) invocationMessage.Arguments.Length);
 
-                    var messageIndex = _messageToIndexMap[message.GetType()];
-                    var indexBytes = BitConverter.GetBytes(messageIndex);
-                    outputStream.WriteByte(indexBytes[0]);
-                    outputStream.WriteByte(indexBytes[1]);
-                    protobufMessage.WriteTo(outputStream);
+                    var protobufMessages = invocationMessage.Arguments.Cast<IMessage>().ToList();
+                    foreach (var protobufMessage in protobufMessages)
+                    {
+                        // Message index
+                        var messageIndex = _messageToIndexMap[message.GetType()];
+                        binaryWriter.Write(messageIndex);
+                        // Protobuf bytes
+                        protobufMessage.WriteDelimitedTo(outputStream);
+                    }
                 }
             }
             else
             {
-                output.Write(new byte[] { 1 });
+                output.Write(new byte[] { 0 });
                 _jsonHubProtocol.WriteMessage(message, output);
-            }
-        }
-
-        public ReadOnlyMemory<byte> GetMessageBytes(HubMessage message)
-        {
-            if (message is IMessage protobufMessage)
-            {
-                var messageIndex = _messageToIndexMap[message.GetType()];
-                var messageIndexBytes = BitConverter.GetBytes(messageIndex);
-
-                var messageBytes = protobufMessage.ToByteArray();
-
-                var combinedBytes = new byte[3 + messageBytes.Length];
-
-                combinedBytes[0] = 0;
-                combinedBytes[1] = messageIndexBytes[0];
-                combinedBytes[2] = messageIndexBytes[1];
-
-                Array.Copy(messageBytes, 0, combinedBytes, 3, messageBytes.Length);
-
-                return combinedBytes;
-            }
-            else
-            {
-                var jsonBytes = _jsonHubProtocol.GetMessageBytes(message).ToArray();
-
-                var combinedBytes = new byte[1 + jsonBytes.Length];
-                combinedBytes[0] = 1;
-                
-                Array.Copy(jsonBytes, 0, combinedBytes, 1, jsonBytes.Length);
-
-                return combinedBytes;
             }
         }
 
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
         {
-            var isProtobuf = input.Slice(0, 1).ToArray()[0] == 0;
-
-            if (isProtobuf)
+            using (var inputStream = input.AsStream())
+            using (var binaryReader = new BinaryReader(inputStream))
             {
-                var indexBytes = input.Slice(1, 2).ToArray();
-                var index = BitConverter.ToUInt16(indexBytes, 0);
-                if (index >= _messageParsers.Count)
-                {
-                    message = null;
-                    return false;
-                }
+                var isProtobuf = binaryReader.ReadByte() == 1;
 
-                var messageSequence = input.Slice(3);
-                using (var messageStream = messageSequence.AsStream())
+                if (isProtobuf)
                 {
-                    message = (HubMessage) _messageParsers[index].ParseFrom(messageStream);
+                    var invocationId = binaryReader.ReadString();
+                    var target = binaryReader.ReadString();
+                    var numberOfHeaders = binaryReader.ReadUInt16();
+                    var headers = new Dictionary<string, string>();
+                    for (var i = 0; i < numberOfHeaders; i++)
+                    {
+                        var key = binaryReader.ReadString();
+                        var value = binaryReader.ReadString();
+                        headers[key] = value;
+                    }
+
+                    var protobufMessages = new List<object>();
+                    var numberOfArguments = binaryReader.ReadByte();
+                    for (var i = 0; i < numberOfArguments; i++)
+                    {
+                        var messageIndex = binaryReader.ReadUInt16();
+                        if (messageIndex >= _messageParsers.Count)
+                        {
+                            message = null;
+                            return false;
+                        }
+
+                        var protobufMessage = _messageParsers[messageIndex].ParseDelimitedFrom(inputStream);
+                        protobufMessages.Add(protobufMessage);
+                    }
+                    
+                    message = new InvocationMessage(invocationId, target, protobufMessages.ToArray())
+                    {
+                        Headers = headers
+                    };
+
                     return true;
                 }
             }
-            else
-            {
-                var jsonSequence = input.Slice(1);
-                return _jsonHubProtocol.TryParseMessage(ref jsonSequence, binder, out message);
-            }
+
+            var jsonSequence = input.Slice(1);
+            return _jsonHubProtocol.TryParseMessage(ref jsonSequence, binder, out message);
         }
     }
 }
