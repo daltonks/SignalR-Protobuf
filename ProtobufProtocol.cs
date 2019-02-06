@@ -60,46 +60,57 @@ namespace Unofficial.SignalR.Protobuf
 
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
         {
+            var writeAsJson = true;
             if (message is InvocationMessage invocationMessage)
             {
                 var numberOfProtobufModels = invocationMessage.Arguments.Count(argument => argument is IMessage);
-                if (numberOfProtobufModels != invocationMessage.Arguments.Length)
+                if (numberOfProtobufModels > 0)
                 {
-                    throw new ArgumentException($"{nameof(ProtobufProtocol)} does not currently support a mix of {nameof(IMessage)} and non-{nameof(IMessage)}.");
-                }
-                
-                using (var outputStream = output.AsStream())
-                using (var binaryWriter = new BinaryWriter(outputStream))
-                {
-                    // isProtobuf byte
-                    binaryWriter.Write((byte) 1);
-                    // InvocationId
-                    binaryWriter.Write(invocationMessage.InvocationId);
-                    // Target
-                    binaryWriter.Write(invocationMessage.Target);
-                    // Count of Headers
-                    binaryWriter.Write((ushort) invocationMessage.Headers.Count);
-                    // Header keys and values
-                    foreach (var header in invocationMessage.Headers)
-                    {
-                        binaryWriter.Write(header.Key);
-                        binaryWriter.Write(header.Value);
-                    }
-                    // Count of arguments
-                    binaryWriter.Write((byte) invocationMessage.Arguments.Length);
+                    writeAsJson = false;
 
-                    var protobufMessages = invocationMessage.Arguments.Cast<IMessage>().ToList();
-                    foreach (var protobufMessage in protobufMessages)
+                    if (numberOfProtobufModels != invocationMessage.Arguments.Length)
                     {
-                        // Message index
-                        var messageIndex = _messageToIndexMap[message.GetType()];
-                        binaryWriter.Write(messageIndex);
-                        // Protobuf bytes
-                        protobufMessage.WriteDelimitedTo(outputStream);
+                        throw new ArgumentException($"{nameof(ProtobufProtocol)} does not currently support a mix of {nameof(IMessage)} and non-{nameof(IMessage)}.");
+                    }
+                
+                    using (var outputStream = output.AsStream())
+                    using (var binaryWriter = new BinaryWriter(outputStream))
+                    {
+                        // isProtobuf byte
+                        binaryWriter.Write((byte) 1);
+                        // InvocationId
+                        binaryWriter.Write(invocationMessage.InvocationId);
+                        // Target
+                        binaryWriter.Write(invocationMessage.Target);
+                        // Count of Headers
+                        binaryWriter.Write((ushort) (invocationMessage.Headers?.Count ?? 0));
+                        // Header keys and values
+                        if (invocationMessage.Headers != null)
+                        {
+                            foreach (var header in invocationMessage.Headers)
+                            {
+                                binaryWriter.Write(header.Key);
+                                binaryWriter.Write(header.Value);
+                            }
+                        }
+                    
+                        // Count of arguments
+                        binaryWriter.Write((byte) invocationMessage.Arguments.Length);
+
+                        var protobufMessages = invocationMessage.Arguments.Cast<IMessage>().ToList();
+                        foreach (var protobufMessage in protobufMessages)
+                        {
+                            // Message index
+                            var messageIndex = _messageToIndexMap[protobufMessage.GetType()];
+                            binaryWriter.Write(messageIndex);
+                            // Protobuf bytes
+                            protobufMessage.WriteDelimitedTo(outputStream);
+                        }
                     }
                 }
             }
-            else
+            
+            if(writeAsJson)
             {
                 output.Write(new byte[] { 0 });
                 _jsonHubProtocol.WriteMessage(message, output);
