@@ -37,22 +37,20 @@ namespace Unofficial.SignalR.Protobuf
 
         public ProtobufProtocol(IReadOnlyList<Type> messageTypes)
         {
-            foreach (var messageType in messageTypes)
+            for (ushort i = 0; i < messageTypes.Count; i++)
             {
-                if (!messageType.IsSubclassOf(typeof(IMessage)))
+                var messageType = messageTypes[i];
+
+                if (!typeof(IMessage).IsAssignableFrom(messageType))
                 {
-                    throw new ArgumentException($"{messageType} does not implement {nameof(IMessage)}");
+                    continue;
                 }
 
                 if (!messageType.IsSubclassOf(typeof(HubMessage)))
                 {
-                    throw new ArgumentException($"{messageType} does not extend from {nameof(HubMessage)}");
+                    continue;
                 }
-            }
 
-            for (ushort i = 0; i < messageTypes.Count; i++)
-            {
-                var messageType = messageTypes[i];
                 _messageParsers.Add(GetParser(messageType));
                 _messageToIndexMap[messageType] = i;
             }
