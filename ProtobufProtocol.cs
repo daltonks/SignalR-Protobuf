@@ -79,7 +79,7 @@ namespace Unofficial.SignalR.Protobuf
                         // isProtobuf byte
                         binaryWriter.Write((byte) 1);
                         // InvocationId
-                        binaryWriter.Write(invocationMessage.InvocationId);
+                        binaryWriter.Write(invocationMessage.InvocationId ?? "");
                         // Target
                         binaryWriter.Write(invocationMessage.Target);
                         // Count of Headers
@@ -127,6 +127,11 @@ namespace Unofficial.SignalR.Protobuf
                 if (isProtobuf)
                 {
                     var invocationId = binaryReader.ReadString();
+                    if (invocationId == "")
+                    {
+                        invocationId = null;
+                    }
+
                     var target = binaryReader.ReadString();
                     var numberOfHeaders = binaryReader.ReadUInt16();
                     var headers = new Dictionary<string, string>();
