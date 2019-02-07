@@ -4,7 +4,6 @@ using System.Linq;
 using Google.Protobuf.Reflection;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ServiceDescriptor = Microsoft.Extensions.DependencyInjection.ServiceDescriptor;
 
@@ -29,8 +28,7 @@ namespace Unofficial.SignalR.Protobuf
             IReadOnlyList<Type> messageTypes
         ) where TBuilder : ISignalRBuilder
         {
-            builder.Services.RemoveAll<IHubProtocol>();
-            builder.Services.AddSingleton<IHubProtocol>(new ProtobufProtocol(messageTypes));
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol>(new ProtobufProtocol(messageTypes)));
             return builder;
         }
     }
