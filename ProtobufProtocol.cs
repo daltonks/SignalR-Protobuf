@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -30,11 +31,11 @@ namespace Unofficial.SignalR.Protobuf
         
         private readonly JsonHubProtocol _jsonHubProtocol = new JsonHubProtocol();
         private readonly List<MessageParser> _messageParsers = new List<MessageParser>();
-        private readonly Dictionary<Type, ushort> _messageToIndexMap = new Dictionary<Type, ushort>();
+        private readonly Dictionary<Type, int> _messageToIndexMap = new Dictionary<Type, int>();
 
         public ProtobufProtocol(IReadOnlyList<Type> messageTypes)
         {
-            for (ushort i = 0; i < messageTypes.Count; i++)
+            for (var i = 0; i < messageTypes.Count; i++)
             {
                 var messageType = messageTypes[i];
 
@@ -72,39 +73,45 @@ namespace Unofficial.SignalR.Protobuf
                     {
                         throw new ArgumentException($"{nameof(ProtobufProtocol)} does not currently support a mix of {nameof(IMessage)} and non-{nameof(IMessage)}.");
                     }
-                
+
                     using (var outputStream = output.AsStream())
-                    using (var binaryWriter = new BinaryWriter(outputStream))
                     {
-                        // isProtobuf byte
-                        binaryWriter.Write((byte) 1);
-                        // InvocationId
-                        binaryWriter.Write(invocationMessage.InvocationId ?? "");
-                        // Target
-                        binaryWriter.Write(invocationMessage.Target);
-                        // Count of Headers
-                        binaryWriter.Write((ushort) (invocationMessage.Headers?.Count ?? 0));
-                        // Header keys and values
-                        if (invocationMessage.Headers != null)
+                        outputStream.WriteByte(1);
+
+                        var protobufArguments = invocationMessage.Arguments.Cast<IMessage>().ToList();
+
+                        List<string> headers;
+                        if (invocationMessage.Headers == null)
                         {
-                            foreach (var header in invocationMessage.Headers)
+                            headers = new List<string>(0);
+                        }
+                        else
+                        {
+                            headers = new List<string>(invocationMessage.Headers.Count);
+                            foreach (var pair in invocationMessage.Headers)
                             {
-                                binaryWriter.Write(header.Key);
-                                binaryWriter.Write(header.Value);
+                                headers.Add(pair.Key);
+                                headers.Add(pair.Value);
                             }
                         }
-                    
-                        // Count of arguments
-                        binaryWriter.Write((byte) invocationMessage.Arguments.Length);
 
-                        var protobufMessages = invocationMessage.Arguments.Cast<IMessage>().ToList();
-                        foreach (var protobufMessage in protobufMessages)
+                        var metadataProtobuf = new InvocationMessageProtobuf
                         {
-                            // Message index
-                            var messageIndex = _messageToIndexMap[protobufMessage.GetType()];
-                            binaryWriter.Write(messageIndex);
-                            // Protobuf bytes
-                            protobufMessage.WriteDelimitedTo(outputStream);
+                            InvocationId = invocationMessage.InvocationId == null 
+                                ? null 
+                                : new NullableString { Value = invocationMessage.InvocationId },
+                            Target = invocationMessage.Target,
+                            Headers = { headers },
+                            MessageIndices = { 
+                                protobufArguments.Select(protobufMessage => _messageToIndexMap[protobufMessage.GetType()])
+                            }
+                        };
+
+                        metadataProtobuf.WriteDelimitedTo(outputStream);
+                        
+                        foreach (var protobufArgument in protobufArguments)
+                        {
+                            protobufArgument.WriteDelimitedTo(outputStream);
                         }
                     }
                 }
@@ -120,44 +127,33 @@ namespace Unofficial.SignalR.Protobuf
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
         {
             using (var inputStream = input.AsStream())
-            using (var binaryReader = new BinaryReader(inputStream))
             {
-                var isProtobuf = binaryReader.ReadByte() == 1;
+                var isProtobuf = inputStream.ReadByte() == 1;
 
                 if (isProtobuf)
                 {
-                    var invocationId = binaryReader.ReadString();
-                    if (invocationId == "")
-                    {
-                        invocationId = null;
-                    }
-
-                    var target = binaryReader.ReadString();
-                    var numberOfHeaders = binaryReader.ReadUInt16();
-                    var headers = new Dictionary<string, string>();
-                    for (var i = 0; i < numberOfHeaders; i++)
-                    {
-                        var key = binaryReader.ReadString();
-                        var value = binaryReader.ReadString();
-                        headers[key] = value;
-                    }
+                    var metadataProtobuf = InvocationMessageProtobuf.Parser.ParseDelimitedFrom(inputStream);
 
                     var protobufMessages = new List<object>();
-                    var numberOfArguments = binaryReader.ReadByte();
-                    for (var i = 0; i < numberOfArguments; i++)
+                    foreach (var messageIndex in metadataProtobuf.MessageIndices)
                     {
-                        var messageIndex = binaryReader.ReadUInt16();
-                        if (messageIndex >= _messageParsers.Count)
-                        {
-                            message = null;
-                            return false;
-                        }
-
                         var protobufMessage = _messageParsers[messageIndex].ParseDelimitedFrom(inputStream);
                         protobufMessages.Add(protobufMessage);
                     }
-                    
-                    message = new InvocationMessage(invocationId, target, protobufMessages.ToArray())
+
+                    var headers = new Dictionary<string, string>(metadataProtobuf.Headers.Count / 2);
+                    for (var i = 0; i <  metadataProtobuf.Headers.Count; i += 2)
+                    {
+                        var key = metadataProtobuf.Headers[i];
+                        var value = metadataProtobuf.Headers[i + 1];
+                        headers[key] = value;
+                    }
+
+                    message = new InvocationMessage(
+                        metadataProtobuf.InvocationId?.Value, 
+                        metadataProtobuf.Target, 
+                        protobufMessages.ToArray()
+                    )
                     {
                         Headers = headers
                     };
