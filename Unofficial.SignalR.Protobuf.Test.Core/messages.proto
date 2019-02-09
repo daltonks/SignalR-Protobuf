@@ -1,0 +1,7 @@
+﻿syntax = "proto3";
+
+package Unofficial.SignalR.Protobuf.Test.Core;
+
+message Testmessage {
+	string value = 1;
+}
