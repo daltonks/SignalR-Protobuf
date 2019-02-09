@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System.IO;
+using System.Reflection;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -21,10 +23,18 @@ namespace Unofficial.SignalR.Protobuf.Test.Server
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-            services
-                .AddSignalR()
-                .AddAzureSignalR(options.SignalRConnectionString)
-                .AddProtobufProtocol(MessagesReflection.Descriptor.MessageTypes);
+            using (var stream = typeof(Startup)
+                .Assembly
+                .GetManifestResourceStream("Unofficial.SignalR.Protobuf.Test.Server.SignalR Connection String.txt"))
+            using (var streamReader = new StreamReader(stream))
+            {
+                var signalRConnectionString = streamReader.ReadToEnd();
+
+                services
+                    .AddSignalR()
+                    .AddAzureSignalR(signalRConnectionString)
+                    .AddProtobufProtocol(MessagesReflection.Descriptor.MessageTypes);
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
