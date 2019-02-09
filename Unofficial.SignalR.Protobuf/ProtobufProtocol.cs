@@ -15,7 +15,7 @@ namespace Unofficial.SignalR.Protobuf
 {
     public class ProtobufProtocol : IHubProtocol
     {
-        private readonly JsonHubProtocol _jsonHubProtocol = new JsonHubProtocol();
+        private readonly IHubProtocol _fallbackProtocol = new MessagePackHubProtocol();
         private readonly List<Type> _types = new List<Type>();
         private readonly Dictionary<Type, int> _messageToIndexMap = new Dictionary<Type, int>();
 
@@ -110,13 +110,13 @@ namespace Unofficial.SignalR.Protobuf
             }
             
             output.Write(new byte[] { 0 });
-            _jsonHubProtocol.WriteMessage(message, output);
+            _fallbackProtocol.WriteMessage(message, output);
         }
 
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
         {
             // At least one byte is needed to determine if a message should
-            // be parsed as Protobuf or JSON
+            // be parsed as Protobuf or as the fallback protocol
             if (input.IsEmpty)
             {
                 message = null;
@@ -179,7 +179,7 @@ namespace Unofficial.SignalR.Protobuf
             }
             
             input = input.Slice(1);
-            return _jsonHubProtocol.TryParseMessage(ref input, binder, out message);
+            return _fallbackProtocol.TryParseMessage(ref input, binder, out message);
         }
     }
 }
