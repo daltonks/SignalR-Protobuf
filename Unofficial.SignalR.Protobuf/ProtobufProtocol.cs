@@ -21,7 +21,6 @@ namespace Unofficial.SignalR.Protobuf
 
         public ProtobufProtocol(IEnumerable<Type> messageTypes)
         {
-            var index = 0;
             foreach (var messageType in messageTypes)
             {
                 if (!typeof(IMessage).IsAssignableFrom(messageType))
@@ -29,10 +28,8 @@ namespace Unofficial.SignalR.Protobuf
                     continue;
                 }
 
+                _messageToIndexMap[messageType] = _types.Count;
                 _types.Add(messageType);
-                _messageToIndexMap[messageType] = index;
-
-                index++;
             }
         }
 
@@ -65,7 +62,7 @@ namespace Unofficial.SignalR.Protobuf
                     }
                     else
                     {
-                        headers = new List<string>(invocationMessage.Headers.Count);
+                        headers = new List<string>(invocationMessage.Headers.Count * 2);
                         foreach (var pair in invocationMessage.Headers)
                         {
                             headers.Add(pair.Key);
@@ -132,7 +129,6 @@ namespace Unofficial.SignalR.Protobuf
                 // 5 bytes is needed at a minimum to read the 'starting bytes'.
                 // The first byte determines if it should be parsed as Protobuf, which has already been read.
                 // The next 4 bytes represent the int length of the message.
-
                 if (input.Length < 5)
                 {
                     message = null;
