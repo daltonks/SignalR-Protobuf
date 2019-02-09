@@ -25,7 +25,7 @@ namespace Unofficial.SignalR.Protobuf
             {
                 if (!typeof(IMessage).IsAssignableFrom(messageType))
                 {
-                    continue;
+                    throw new ArgumentException($"{messageType} is not a protobuf model ({nameof(IMessage)})");
                 }
 
                 _messageToIndexMap[messageType] = _types.Count;
