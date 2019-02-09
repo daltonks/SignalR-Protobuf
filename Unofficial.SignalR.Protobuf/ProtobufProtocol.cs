@@ -31,19 +31,20 @@ namespace Unofficial.SignalR.Protobuf
         private readonly List<MessageParser> _messageParsers = new List<MessageParser>();
         private readonly Dictionary<Type, int> _messageToIndexMap = new Dictionary<Type, int>();
 
-        public ProtobufProtocol(IReadOnlyList<Type> messageTypes)
+        public ProtobufProtocol(IEnumerable<Type> messageTypes)
         {
-            for (var i = 0; i < messageTypes.Count; i++)
+            var index = 0;
+            foreach (var messageType in messageTypes)
             {
-                var messageType = messageTypes[i];
-
                 if (!typeof(IMessage).IsAssignableFrom(messageType))
                 {
                     continue;
                 }
 
                 _messageParsers.Add(GetParser(messageType));
-                _messageToIndexMap[messageType] = i;
+                _messageToIndexMap[messageType] = index;
+
+                index++;
             }
         }
 
@@ -124,6 +125,12 @@ namespace Unofficial.SignalR.Protobuf
 
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
         {
+            if (input.IsEmpty)
+            {
+                message = null;
+                return false;
+            }
+
             using (var inputStream = input.AsStream())
             {
                 var isProtobuf = inputStream.ReadByte() == 1;
@@ -156,12 +163,13 @@ namespace Unofficial.SignalR.Protobuf
                         Headers = headers
                     };
 
+                    input = input.Slice(inputStream.Position);
                     return true;
                 }
             }
 
-            var jsonSequence = input.Slice(1);
-            return _jsonHubProtocol.TryParseMessage(ref jsonSequence, binder, out message);
+            input = input.Slice(1);
+            return _jsonHubProtocol.TryParseMessage(ref input, binder, out message);
         }
     }
 }

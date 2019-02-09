@@ -17,15 +17,13 @@ namespace Unofficial.SignalR.Protobuf
         ) where TBuilder : ISignalRBuilder
         {
             return builder.AddProtobufProtocol(
-                messageDescriptors
-                    .Select(messageDescriptor => messageDescriptor.ClrType)
-                    .ToList()
+                messageDescriptors.Select(messageDescriptor => messageDescriptor.ClrType)
             );
         }
 
         public static TBuilder AddProtobufProtocol<TBuilder>(
             this TBuilder builder, 
-            IReadOnlyList<Type> messageTypes
+            IEnumerable<Type> messageTypes
         ) where TBuilder : ISignalRBuilder
         {
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol>(new ProtobufProtocol(messageTypes)));
