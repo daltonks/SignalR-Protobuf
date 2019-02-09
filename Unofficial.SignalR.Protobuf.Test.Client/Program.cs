@@ -10,25 +10,32 @@ namespace Unofficial.SignalR.Protobuf.Test.Client
     {
         private static async Task Main(string[] args)
         {
-            var client = new HubConnectionBuilder()
-                .WithUrl("http://localhost:51429/realtime")
-                .AddProtobufProtocol(MessagesReflection.Descriptor.MessageTypes)
-                .Build();
+            try
+            {
+                var client = new HubConnectionBuilder()
+                    .WithUrl("http://localhost:51429/realtime")
+                    .AddProtobufProtocol(MessagesReflection.Descriptor.MessageTypes)
+                    .Build();
 
-            client.On<TestMessage>(
-                "HandleTestMessage",
-                message =>
-                {
-                    Debug.WriteLine($"Client received \"{message.Value}\"");
-                }
-            );
+                client.On<TestMessage>(
+                    "HandleTestMessage",
+                    message =>
+                    {
+                        Debug.WriteLine($"Client received \"{message.Value}\"");
+                    }
+                );
 
-            await client.StartAsync();
-            await client.InvokeAsync(
-                "HandleTestMessage", 
-                new TestMessage { Value = "This came from the client!" }
-            );
-
+                await client.StartAsync();
+                await client.InvokeAsync(
+                    "HandleTestMessage", 
+                    new TestMessage { Value = "This came from the client!" }
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            
             Console.WriteLine("Done!");
             Console.ReadLine();
         }
