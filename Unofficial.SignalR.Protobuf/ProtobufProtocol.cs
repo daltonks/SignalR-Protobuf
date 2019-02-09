@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using Google.Protobuf;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
@@ -73,9 +70,7 @@ namespace Unofficial.SignalR.Protobuf
                     var protobufArguments = invocationMessage.Arguments.Cast<IMessage>().ToList();
                     var metadataProtobuf = new InvocationMessageProtobuf
                     {
-                        InvocationId = invocationMessage.InvocationId == null 
-                            ? null 
-                            : new NullableString { Value = invocationMessage.InvocationId },
+                        InvocationId = invocationMessage.InvocationId,
                         Target = invocationMessage.Target,
                         Headers = { headers },
                         MessageIndices = { 
