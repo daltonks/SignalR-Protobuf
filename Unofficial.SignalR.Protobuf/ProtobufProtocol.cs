@@ -118,11 +118,9 @@ namespace Unofficial.SignalR.Protobuf
 
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
         {
-            // 5 bytes is needed at a minimum to read the 'starting bytes'.
-            // The first byte determines if it should be parsed as Protobuf.
-            // If Protobuf, the next 4 bytes represent the int length of the message.
-            // I doubt that a JSON-based message will be smaller than 5 bytes.
-            if (input.Length < 5)
+            // At least one byte is needed to determine if a message should
+            // be parsed as Protobuf or JSON
+            if (input.IsEmpty)
             {
                 message = null;
                 return false;
@@ -131,6 +129,16 @@ namespace Unofficial.SignalR.Protobuf
             var isProtobuf = input.Slice(0, 1).ToArray()[0] == 1;
             if (isProtobuf)
             {
+                // 5 bytes is needed at a minimum to read the 'starting bytes'.
+                // The first byte determines if it should be parsed as Protobuf, which has already been read.
+                // The next 4 bytes represent the int length of the message.
+
+                if (input.Length < 5)
+                {
+                    message = null;
+                    return false;
+                }
+
                 var numberOfBodyBytes = BitConverter.ToInt32(input.Slice(1, 4).ToArray(), 0);
                 if (input.Length < 5 + numberOfBodyBytes)
                 {
