@@ -2,6 +2,6 @@
 
 package Unofficial.SignalR.Protobuf.Test.Core;
 
-message Testmessage {
+message TestMessage {
 	string value = 1;
 }
