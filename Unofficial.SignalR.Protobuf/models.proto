@@ -12,7 +12,7 @@ message InvocationMessageProtobuf {
 message StreamItemMessageProtobuf {
 	string invocationId = 1;
 	repeated string headers = 2;
-	repeated int32 messageIndices = 3;
+	int32 messageIndex = 3;
 }
 
 message NullableString {

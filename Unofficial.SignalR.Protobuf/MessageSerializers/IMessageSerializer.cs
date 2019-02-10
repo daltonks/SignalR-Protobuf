@@ -11,6 +11,6 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         IEnumerable<Type> SupportedTypes { get; }
         byte GetTypeByte(HubMessage message);
         void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, int> protobufTypeToIndexMap);
-        bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, IReadOnlyList<Type> protobufTypes);
+        bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, byte typeByte, IReadOnlyList<Type> protobufTypes);
     }
 }
