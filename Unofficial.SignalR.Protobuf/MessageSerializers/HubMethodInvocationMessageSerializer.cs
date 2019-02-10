@@ -39,31 +39,18 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         {
             var methodMessage = (HubMethodInvocationMessage) message;
 
-            List<string> headers;
-            if (methodMessage.Headers == null)
-            {
-                headers = new List<string>(0);
-            }
-            else
-            {
-                headers = new List<string>(methodMessage.Headers.Count * 2);
-                foreach (var pair in methodMessage.Headers)
-                {
-                    headers.Add(pair.Key);
-                    headers.Add(pair.Value);
-                }
-            }
-
             var protobufArguments = methodMessage.Arguments.Cast<IMessage>().ToList();
-            var messageIndices = protobufArguments.Select(
-                protobufMessage => protobufTypeToIndexMap[protobufMessage.GetType()]
-            );
+
             var metadataProtobuf = new InvocationMessageProtobuf
             {
                 InvocationId = methodMessage.InvocationId,
                 Target = methodMessage.Target,
-                Headers = { headers },
-                MessageIndices = { messageIndices }
+                Headers = { methodMessage.Headers.Flatten() },
+                MessageIndices = { 
+                    protobufArguments.Select(
+                        protobufMessage => protobufTypeToIndexMap[protobufMessage.GetType()]
+                    )
+                }
             };
 
             var metadataByteCount = metadataProtobuf.CalculateSize();
@@ -87,7 +74,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
             }
         }
 
-        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, IReadOnlyList<Type> protobufTypes)
+        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, byte typeByte, IReadOnlyList<Type> protobufTypes)
         {
             // At least 4 bytes are required to read the length of the message
             if (input.Length < 4)
@@ -109,31 +96,41 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
             {
                 var metadataProtobuf = new InvocationMessageProtobuf().MergeFixedDelimitedFrom(inputStream);
 
-                var protobufMessages = new List<object>();
-                foreach (var messageIndex in metadataProtobuf.MessageIndices)
+                var protobufArguments = new object[metadataProtobuf.MessageIndices.Count];
+                for (var i = 0; i < metadataProtobuf.MessageIndices.Count; i++)
                 {
-                    var protobufMessage = (IMessage) Activator.CreateInstance(protobufTypes[messageIndex]);
-                    protobufMessage.MergeFixedDelimitedFrom(inputStream);
-                    protobufMessages.Add(protobufMessage);
+                    var messageIndex = metadataProtobuf.MessageIndices[i];
+                    var protobufArgument = (IMessage) Activator.CreateInstance(protobufTypes[messageIndex]);
+                    protobufArgument.MergeFixedDelimitedFrom(inputStream);
+                    protobufArguments[i] = protobufArgument;
                 }
 
-                var headers = new Dictionary<string, string>(metadataProtobuf.Headers.Count / 2);
-                for (var i = 0; i <  metadataProtobuf.Headers.Count; i += 2)
+                switch (typeByte)
                 {
-                    var key = metadataProtobuf.Headers[i];
-                    var value = metadataProtobuf.Headers[i + 1];
-                    headers[key] = value;
+                    case ProtobufProtocol.InvocationType:
+                        message = new InvocationMessage(
+                            metadataProtobuf.InvocationId, 
+                            metadataProtobuf.Target, 
+                            protobufArguments
+                        )
+                        {
+                            Headers = metadataProtobuf.Headers.Unflatten()
+                        };
+                        break;
+                    case ProtobufProtocol.StreamInvocationType:
+                        message = new StreamInvocationMessage(
+                            metadataProtobuf.InvocationId, 
+                            metadataProtobuf.Target, 
+                            protobufArguments
+                        )
+                        {
+                            Headers = metadataProtobuf.Headers.Unflatten()
+                        };
+                        break;
+                    default:
+                        throw new ArgumentException($"Type byte {typeByte} not handled in {nameof(HubMethodInvocationMessageSerializer)}");
                 }
-
-                message = new InvocationMessage(
-                    metadataProtobuf.InvocationId?.Value, 
-                    metadataProtobuf.Target, 
-                    protobufMessages.ToArray()
-                )
-                {
-                    Headers = headers
-                };
-
+                
                 input = input.Slice(numberOfBodyBytes);
                 return true;
             }

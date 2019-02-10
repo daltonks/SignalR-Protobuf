@@ -26,6 +26,7 @@ namespace Unofficial.SignalR.Protobuf
             var serializers = new IMessageSerializer[]
             {
                 new HubMethodInvocationMessageSerializer(), 
+                new StreamItemMessageSerializer()
             };
 
             foreach (var serializer in serializers)
@@ -98,7 +99,7 @@ namespace Unofficial.SignalR.Protobuf
             var processedSequence = input.Slice(1);
 
             var successfullyParsed = TypeByteToSerializerMap.TryGetValue(typeByte, out var serializer) 
-                ? serializer.TryParseMessage(ref processedSequence, out message, _protobufTypes) 
+                ? serializer.TryParseMessage(ref processedSequence, out message, typeByte, _protobufTypes) 
                 : _fallbackProtocol.TryParseMessage(ref processedSequence, binder, out message);
 
             if (successfullyParsed)
