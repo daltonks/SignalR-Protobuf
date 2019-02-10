@@ -7,26 +7,56 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Nerdbank.Streams;
+using Unofficial.SignalR.Protobuf.MessageSerializers;
 
 namespace Unofficial.SignalR.Protobuf
 {
     public class ProtobufProtocol : IHubProtocol
     {
-        private readonly IHubProtocol _fallbackProtocol = new MessagePackHubProtocol();
-        private readonly List<Type> _types = new List<Type>();
-        private readonly Dictionary<Type, int> _messageToIndexMap = new Dictionary<Type, int>();
+        public const byte InvocationType = 0;
+        public const byte StreamInvocationType = 1;
+        public const byte StreamItemType = 2;
+        public const byte FallbackType = 3;
 
-        public ProtobufProtocol(IEnumerable<Type> messageTypes)
+        private static readonly Dictionary<Type, IMessageSerializer> TypeToSerializerMap = new Dictionary<Type, IMessageSerializer>();
+        private static readonly Dictionary<byte, IMessageSerializer> TypeByteToSerializerMap = new Dictionary<byte, IMessageSerializer>();
+
+        static ProtobufProtocol()
         {
-            foreach (var messageType in messageTypes)
+            var serializers = new IMessageSerializer[]
             {
-                if (!typeof(IMessage).IsAssignableFrom(messageType))
+                new HubMethodInvocationMessageSerializer(), 
+            };
+
+            foreach (var serializer in serializers)
+            {
+                foreach (var supportedType in serializer.SupportedTypes)
                 {
-                    throw new ArgumentException($"{messageType} is not a protobuf model ({nameof(IMessage)})");
+                    TypeToSerializerMap[supportedType] = serializer;
                 }
 
-                _messageToIndexMap[messageType] = _types.Count;
-                _types.Add(messageType);
+                foreach (var supportedTypeByte in serializer.SupportedTypeBytes)
+                {
+                    TypeByteToSerializerMap[supportedTypeByte] = serializer;
+                }
+            }
+        }
+        
+        private readonly List<Type> _protobufTypes = new List<Type>();
+        private readonly Dictionary<Type, int> _protobufTypeToIndexMap = new Dictionary<Type, int>();
+        private readonly IHubProtocol _fallbackProtocol = new MessagePackHubProtocol();
+
+        public ProtobufProtocol(IEnumerable<Type> protobufTypes)
+        {
+            foreach (var protobufType in protobufTypes)
+            {
+                if (!typeof(IMessage).IsAssignableFrom(protobufType))
+                {
+                    throw new ArgumentException($"{protobufType} is not a protobuf model ({nameof(IMessage)})");
+                }
+
+                _protobufTypeToIndexMap[protobufType] = _protobufTypes.Count;
+                _protobufTypes.Add(protobufType);
             }
         }
 
@@ -42,139 +72,41 @@ namespace Unofficial.SignalR.Protobuf
 
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
         {
-            if (message is InvocationMessage invocationMessage)
+            if (TypeToSerializerMap.TryGetValue(message.GetType(), out var serializer))
             {
-                var numberOfProtobufModels = invocationMessage.Arguments.Count(argument => argument is IMessage);
-                if (numberOfProtobufModels > 0)
-                {
-                    if (numberOfProtobufModels != invocationMessage.Arguments.Length)
-                    {
-                        throw new ArgumentException($"{nameof(ProtobufProtocol)} does not currently support a mix of {nameof(IMessage)} and non-{nameof(IMessage)}.");
-                    }
-                    
-                    List<string> headers;
-                    if (invocationMessage.Headers == null)
-                    {
-                        headers = new List<string>(0);
-                    }
-                    else
-                    {
-                        headers = new List<string>(invocationMessage.Headers.Count * 2);
-                        foreach (var pair in invocationMessage.Headers)
-                        {
-                            headers.Add(pair.Key);
-                            headers.Add(pair.Value);
-                        }
-                    }
-
-                    var protobufArguments = invocationMessage.Arguments.Cast<IMessage>().ToList();
-                    var metadataProtobuf = new InvocationMessageProtobuf
-                    {
-                        InvocationId = invocationMessage.InvocationId,
-                        Target = invocationMessage.Target,
-                        Headers = { headers },
-                        MessageIndices = { 
-                            protobufArguments.Select(protobufMessage => _messageToIndexMap[protobufMessage.GetType()])
-                        }
-                    };
-
-                    var metadataByteCount = metadataProtobuf.CalculateSize();
-                    var argumentByteCounts = protobufArguments.Select(argument => argument.CalculateSize()).ToList();
-
-                    using (var outputStream = output.AsStream())
-                    {
-                        outputStream.WriteByte(1);
-
-                        var totalBodyByteCount = metadataByteCount + argumentByteCounts.Sum() + 4 * (1 + argumentByteCounts.Count);
-                        outputStream.Write(BitConverter.GetBytes(totalBodyByteCount), 0, 4);
-
-                        outputStream.Write(BitConverter.GetBytes(metadataByteCount), 0, 4);
-                        metadataProtobuf.WriteTo(outputStream);
-
-                        for (var i = 0; i < protobufArguments.Count; i++)
-                        {
-                            var protobufArgument = protobufArguments[i];
-                            var argumentByteCount = argumentByteCounts[i];
-                            outputStream.Write(BitConverter.GetBytes(argumentByteCount), 0, 4);
-                            protobufArgument.WriteTo(outputStream);
-                        }
-                    }
-
-                    return;
-                }
+                var typeByte = serializer.GetTypeByte(message);
+                output.Write(new[] { typeByte });
+                serializer.WriteMessage(message, output, _protobufTypeToIndexMap);
             }
-            
-            output.Write(new byte[] { 0 });
-            _fallbackProtocol.WriteMessage(message, output);
+            else
+            {
+                output.Write(new [] { FallbackType });
+                _fallbackProtocol.WriteMessage(message, output);
+            }
         }
 
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
         {
-            // At least one byte is needed to determine if a message should
-            // be parsed as Protobuf or as the fallback protocol
+            // At least one byte is needed to determine the type of message
             if (input.IsEmpty)
             {
                 message = null;
                 return false;
             }
 
-            var isProtobuf = input.Slice(0, 1).ToArray()[0] == 1;
-            if (isProtobuf)
+            var typeByte = input.Slice(0, 1).ToArray()[0];
+            var processedSequence = input.Slice(1);
+
+            var successfullyParsed = TypeByteToSerializerMap.TryGetValue(typeByte, out var serializer) 
+                ? serializer.TryParseMessage(ref processedSequence, out message, _protobufTypes) 
+                : _fallbackProtocol.TryParseMessage(ref processedSequence, binder, out message);
+
+            if (successfullyParsed)
             {
-                // 5 bytes is needed at a minimum to read the 'starting bytes'.
-                // The first byte determines if it should be parsed as Protobuf, which has already been read.
-                // The next 4 bytes represent the int length of the message.
-                if (input.Length < 5)
-                {
-                    message = null;
-                    return false;
-                }
-
-                var numberOfBodyBytes = BitConverter.ToInt32(input.Slice(1, 4).ToArray(), 0);
-                if (input.Length < 5 + numberOfBodyBytes)
-                {
-                    message = null;
-                    return false;
-                }
-
-                input = input.Slice(5);
-
-                using (var inputStream = input.AsStream())
-                {
-                    var metadataProtobuf = new InvocationMessageProtobuf().MergeFixedDelimitedFrom(inputStream);
-
-                    var protobufMessages = new List<object>();
-                    foreach (var messageIndex in metadataProtobuf.MessageIndices)
-                    {
-                        var protobufMessage = (IMessage) Activator.CreateInstance(_types[messageIndex]);
-                        protobufMessage.MergeFixedDelimitedFrom(inputStream);
-                        protobufMessages.Add(protobufMessage);
-                    }
-
-                    var headers = new Dictionary<string, string>(metadataProtobuf.Headers.Count / 2);
-                    for (var i = 0; i <  metadataProtobuf.Headers.Count; i += 2)
-                    {
-                        var key = metadataProtobuf.Headers[i];
-                        var value = metadataProtobuf.Headers[i + 1];
-                        headers[key] = value;
-                    }
-
-                    message = new InvocationMessage(
-                        metadataProtobuf.InvocationId?.Value, 
-                        metadataProtobuf.Target, 
-                        protobufMessages.ToArray()
-                    )
-                    {
-                        Headers = headers
-                    };
-
-                    input = input.Slice(numberOfBodyBytes);
-                    return true;
-                }
+                input = processedSequence;
             }
-            
-            input = input.Slice(1);
-            return _fallbackProtocol.TryParseMessage(ref input, binder, out message);
+
+            return successfullyParsed;
         }
     }
 }
