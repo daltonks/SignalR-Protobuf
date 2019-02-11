@@ -9,20 +9,8 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
     public class StreamItemMessageSerializer : IMessageSerializer
     {
-        public IEnumerable<byte> SupportedTypeBytes => new[]
-        {
-            ProtobufProtocol.StreamItemType
-        };
-
-        public IEnumerable<Type> SupportedTypes => new[]
-        {
-            typeof(StreamItemMessage)
-        };
-
-        public byte GetTypeByte(HubMessage message)
-        {
-            return ProtobufProtocol.StreamItemType;
-        }
+        public ProtobufMessageType EnumType => ProtobufMessageType.StreamItem;
+        public Type MessageType => typeof(StreamItemMessage);
 
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, int> protobufTypeToIndexMap)
         {
@@ -53,7 +41,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
             }
         }
 
-        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, byte typeByte, IReadOnlyList<Type> protobufTypes)
+        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, IReadOnlyList<Type> protobufTypes)
         {
             // At least 4 bytes are required to read the length of the message
             if (input.Length < 4)

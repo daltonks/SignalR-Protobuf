@@ -2,7 +2,22 @@
 
 package Unofficial.SignalR.Protobuf;
 
+message CloseMessageProtobuf {
+	NullableString error = 1;
+}
+
+message HandshakeResponseMessageProtobuf {
+	NullableString error = 1;
+}
+
 message InvocationMessageProtobuf {
+	NullableString invocationId = 1;
+	string target = 2;
+	repeated string headers = 3;
+	repeated int32 messageIndices = 4;
+}
+
+message StreamInvocationMessageProtobuf {
 	NullableString invocationId = 1;
 	string target = 2;
 	repeated string headers = 3;

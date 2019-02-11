@@ -1,51 +1,50 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Nerdbank.Streams;
 using Unofficial.SignalR.Protobuf.MessageSerializers;
 
 namespace Unofficial.SignalR.Protobuf
 {
+    public enum ProtobufMessageType
+    {
+        Close,
+        HandshakeResponse,
+        Invocation,
+        Ping,
+        StreamInvocation,
+        StreamItem
+    }
+
     public class ProtobufProtocol : IHubProtocol
     {
-        public const byte InvocationType = 0;
-        public const byte StreamInvocationType = 1;
-        public const byte StreamItemType = 2;
-        public const byte FallbackType = 3;
-
         private static readonly Dictionary<Type, IMessageSerializer> TypeToSerializerMap = new Dictionary<Type, IMessageSerializer>();
-        private static readonly Dictionary<byte, IMessageSerializer> TypeByteToSerializerMap = new Dictionary<byte, IMessageSerializer>();
+        private static readonly Dictionary<ProtobufMessageType, IMessageSerializer> EnumTypeToSerializerMap = new Dictionary<ProtobufMessageType, IMessageSerializer>();
 
         static ProtobufProtocol()
         {
             var serializers = new IMessageSerializer[]
             {
-                new HubMethodInvocationMessageSerializer(), 
+                new CloseMessageSerializer(), 
+                new HandshakeResponseMessageSerializer(), 
+                new InvocationMessageSerializer(), 
+                new PingMessageSerializer(), 
+                new StreamInvocationMessageSerializer(), 
                 new StreamItemMessageSerializer()
             };
 
             foreach (var serializer in serializers)
             {
-                foreach (var supportedType in serializer.SupportedTypes)
-                {
-                    TypeToSerializerMap[supportedType] = serializer;
-                }
-
-                foreach (var supportedTypeByte in serializer.SupportedTypeBytes)
-                {
-                    TypeByteToSerializerMap[supportedTypeByte] = serializer;
-                }
+                EnumTypeToSerializerMap[serializer.EnumType] = serializer;
+                TypeToSerializerMap[serializer.MessageType] = serializer;
             }
         }
         
         private readonly List<Type> _protobufTypes = new List<Type>();
         private readonly Dictionary<Type, int> _protobufTypeToIndexMap = new Dictionary<Type, int>();
-        private readonly IHubProtocol _fallbackProtocol = new MessagePackHubProtocol();
 
         public ProtobufProtocol(IEnumerable<Type> protobufTypes)
         {
@@ -73,17 +72,9 @@ namespace Unofficial.SignalR.Protobuf
 
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
         {
-            if (TypeToSerializerMap.TryGetValue(message.GetType(), out var serializer))
-            {
-                var typeByte = serializer.GetTypeByte(message);
-                output.Write(new[] { typeByte });
-                serializer.WriteMessage(message, output, _protobufTypeToIndexMap);
-            }
-            else
-            {
-                output.Write(new [] { FallbackType });
-                _fallbackProtocol.WriteMessage(message, output);
-            }
+            var serializer = TypeToSerializerMap[message.GetType()];
+            output.Write(new[] { (byte) serializer.EnumType });
+            serializer.WriteMessage(message, output, _protobufTypeToIndexMap);
         }
 
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
@@ -95,12 +86,11 @@ namespace Unofficial.SignalR.Protobuf
                 return false;
             }
 
-            var typeByte = input.Slice(0, 1).ToArray()[0];
+            var enumType = (ProtobufMessageType) input.Slice(0, 1).ToArray()[0];
             var processedSequence = input.Slice(1);
 
-            var successfullyParsed = TypeByteToSerializerMap.TryGetValue(typeByte, out var serializer) 
-                ? serializer.TryParseMessage(ref processedSequence, out message, typeByte, _protobufTypes) 
-                : _fallbackProtocol.TryParseMessage(ref processedSequence, binder, out message);
+            var serializer = EnumTypeToSerializerMap[enumType];
+            var successfullyParsed = serializer.TryParseMessage(ref processedSequence, out message, _protobufTypes);
 
             if (successfullyParsed)
             {
