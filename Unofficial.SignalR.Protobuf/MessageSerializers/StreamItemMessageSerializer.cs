@@ -27,11 +27,12 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 
         protected override HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels)
         {
-            var metadataProtobuf = (StreamItemMessageProtobuf) protobufModels.First();
+            var protobuf = (StreamItemMessageProtobuf) protobufModels.First();
             var itemProtobuf = protobufModels[1];
-            return new StreamItemMessage(metadataProtobuf.InvocationId, itemProtobuf)
+
+            return new StreamItemMessage(protobuf.InvocationId, itemProtobuf)
             {
-                Headers = metadataProtobuf.Headers.Unflatten()
+                Headers = protobuf.Headers.Unflatten()
             };
         }
     }

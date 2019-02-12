@@ -11,6 +11,13 @@ message CloseMessageProtobuf {
 	NullableString error = 1;
 }
 
+message CompletionMessageProtobuf {
+	string invocationId = 1;
+	repeated string headers = 2;
+	NullableString error = 3;
+	bool hasResult = 4;
+}
+
 message HandshakeRequestMessageProtobuf {
 	string protocol = 1;
 	int32 version = 2;

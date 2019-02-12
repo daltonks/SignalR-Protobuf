@@ -15,6 +15,7 @@ namespace Unofficial.SignalR.Protobuf
     {
         CancelInvocation,
         Close,
+        Completion,
         HandshakeRequest,
         HandshakeResponse,
         Invocation,
@@ -34,6 +35,7 @@ namespace Unofficial.SignalR.Protobuf
             {
                 new CancelInvocationMessageSerializer(), 
                 new CloseMessageSerializer(), 
+                new CompletionMessageSerializer(),
                 new HandshakeRequestMessageSerializer(), 
                 new HandshakeResponseMessageSerializer(), 
                 new InvocationMessageSerializer(), 
