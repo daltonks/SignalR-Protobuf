@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {

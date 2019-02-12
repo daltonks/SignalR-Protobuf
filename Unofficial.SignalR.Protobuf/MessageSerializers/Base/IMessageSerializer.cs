@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.SignalR.Protocol;
 
-namespace Unofficial.SignalR.Protobuf.MessageSerializers
+namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
 {
     public interface IMessageSerializer
     {

@@ -6,6 +6,11 @@ message CloseMessageProtobuf {
 	NullableString error = 1;
 }
 
+message HandshakeRequestMessageProtobuf {
+	string protocol = 1;
+	int32 version = 2;
+}
+
 message HandshakeResponseMessageProtobuf {
 	NullableString error = 1;
 }
