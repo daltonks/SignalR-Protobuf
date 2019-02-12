@@ -7,12 +7,14 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Unofficial.SignalR.Protobuf.MessageSerializers;
+using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 
 namespace Unofficial.SignalR.Protobuf
 {
     public enum ProtobufMessageType
     {
         Close,
+        HandshakeRequest,
         HandshakeResponse,
         Invocation,
         Ping,
@@ -30,6 +32,7 @@ namespace Unofficial.SignalR.Protobuf
             var serializers = new IMessageSerializer[]
             {
                 new CloseMessageSerializer(), 
+                new HandshakeRequestMessageSerializer(), 
                 new HandshakeResponseMessageSerializer(), 
                 new InvocationMessageSerializer(), 
                 new PingMessageSerializer(), 

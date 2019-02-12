@@ -6,7 +6,7 @@ using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Nerdbank.Streams;
 
-namespace Unofficial.SignalR.Protobuf.MessageSerializers
+namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
 {
     public abstract class BaseMessageSerializer : IMessageSerializer
     {
