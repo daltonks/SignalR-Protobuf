@@ -13,7 +13,8 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         public ProtobufMessageType EnumType => ProtobufMessageType.Invocation;
         public Type MessageType => typeof(InvocationMessage);
 
-        public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, int> protobufTypeToIndexMap)
+        public void WriteMessage(HubMessage message, IBufferWriter<byte> output,
+            IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
         {
             var invocationMessage = (InvocationMessage) message;
 

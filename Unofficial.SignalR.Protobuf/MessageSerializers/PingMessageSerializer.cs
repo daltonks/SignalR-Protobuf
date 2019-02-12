@@ -10,7 +10,8 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         public ProtobufMessageType EnumType => ProtobufMessageType.Ping;
         public Type MessageType => typeof(PingMessage);
 
-        public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, int> protobufTypeToIndexMap)
+        public void WriteMessage(HubMessage message, IBufferWriter<byte> output,
+            IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
         {
             
         }

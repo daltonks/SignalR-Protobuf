@@ -44,7 +44,7 @@ namespace Unofficial.SignalR.Protobuf
         }
         
         private readonly List<Type> _protobufTypes = new List<Type>();
-        private readonly Dictionary<Type, int> _protobufTypeToIndexMap = new Dictionary<Type, int>();
+        private readonly Dictionary<Type, short> _protobufTypeToIndexMap = new Dictionary<Type, short>();
 
         public ProtobufProtocol(IEnumerable<Type> protobufTypes)
         {
@@ -55,7 +55,7 @@ namespace Unofficial.SignalR.Protobuf
                     throw new ArgumentException($"{protobufType} is not a protobuf model ({nameof(IMessage)})");
                 }
 
-                _protobufTypeToIndexMap[protobufType] = _protobufTypes.Count;
+                _protobufTypeToIndexMap[protobufType] = (short) _protobufTypes.Count;
                 _protobufTypes.Add(protobufType);
             }
         }
