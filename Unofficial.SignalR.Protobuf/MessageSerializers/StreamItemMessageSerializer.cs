@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Nerdbank.Streams;
 using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
