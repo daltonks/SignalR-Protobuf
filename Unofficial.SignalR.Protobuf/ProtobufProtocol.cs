@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
@@ -48,6 +49,10 @@ namespace Unofficial.SignalR.Protobuf
 
         public ProtobufProtocol(IEnumerable<Type> protobufTypes)
         {
+            // Append models.proto types to protobufTypes
+            protobufTypes = ModelsReflection.Descriptor.MessageTypes.Select(messageType => messageType.ClrType)
+                .Concat(protobufTypes);
+
             foreach (var protobufType in protobufTypes)
             {
                 if (!typeof(IMessage).IsAssignableFrom(protobufType))

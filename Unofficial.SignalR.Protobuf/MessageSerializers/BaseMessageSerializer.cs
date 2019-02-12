@@ -13,12 +13,12 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         public abstract ProtobufMessageType EnumType { get; }
         public abstract Type MessageType { get; }
 
-        protected abstract IReadOnlyList<IMessage> CreateProtobufModels(HubMessage message);
+        protected abstract IEnumerable<IMessage> CreateProtobufModels(HubMessage message);
         protected abstract HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels);
 
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
         {
-            var protobufModels = CreateProtobufModels(message);
+            var protobufModels = CreateProtobufModels(message).ToList();
 
             var numberOfNullProtobufModels = protobufModels.Count(protobufModel => protobufModel == null);
             var numberOfNonNullProtobufModels = protobufModels.Count - numberOfNullProtobufModels;
