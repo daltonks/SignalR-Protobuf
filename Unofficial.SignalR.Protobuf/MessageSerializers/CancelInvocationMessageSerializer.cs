@@ -25,10 +25,11 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 
         protected override HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels)
         {
-            var metadataProtobuf = (CancelInvocationMessageProtobuf) protobufModels.Single();
-            return new CancelInvocationMessage(metadataProtobuf.InvocationId)
+            var protobuf = (CancelInvocationMessageProtobuf) protobufModels.Single();
+            
+            return new CancelInvocationMessage(protobuf.InvocationId)
             {
-                Headers = metadataProtobuf.Headers.Unflatten()
+                Headers = protobuf.Headers.Unflatten()
             };
         }
     }
