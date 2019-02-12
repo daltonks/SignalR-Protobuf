@@ -1,105 +1,46 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Nerdbank.Streams;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
-    public class InvocationMessageSerializer : IMessageSerializer
+    public class InvocationMessageSerializer : BaseMessageSerializer
     {
-        public ProtobufMessageType EnumType => ProtobufMessageType.Invocation;
-        public Type MessageType => typeof(InvocationMessage);
+        public override ProtobufMessageType EnumType => ProtobufMessageType.Invocation;
+        public override Type MessageType => typeof(InvocationMessage);
 
-        public void WriteMessage(HubMessage message, IBufferWriter<byte> output,
-            IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
+        protected override IEnumerable<IMessage> CreateProtobufModels(HubMessage message)
         {
             var invocationMessage = (InvocationMessage) message;
 
-            var protobufArguments = invocationMessage.Arguments.Cast<IMessage>().ToList();
-
-            var metadataProtobuf = new InvocationMessageProtobuf
+            yield return new InvocationMessageProtobuf
             {
                 InvocationId = invocationMessage.InvocationId,
                 Target = invocationMessage.Target,
-                Headers = { invocationMessage.Headers.Flatten() },
-                MessageIndices = { 
-                    protobufArguments.Select(
-                        protobufMessage => protobufTypeToIndexMap[protobufMessage.GetType()]
-                    )
-                }
+                Headers = { invocationMessage.Headers.Flatten() }
             };
 
-            var metadataByteCount = metadataProtobuf.CalculateSize();
-            var argumentByteCounts = protobufArguments.Select(argument => argument.CalculateSize()).ToList();
-
-            using (var outputStream = output.AsStream())
+            foreach (var argument in invocationMessage.Arguments.Cast<IMessage>())
             {
-                var totalBodyByteCount = metadataByteCount + argumentByteCounts.Sum() + 4 * (1 + argumentByteCounts.Count);
-                outputStream.Write(BitConverter.GetBytes(totalBodyByteCount), 0, 4);
-
-                outputStream.Write(BitConverter.GetBytes(metadataByteCount), 0, 4);
-                metadataProtobuf.WriteTo(outputStream);
-
-                for (var i = 0; i < protobufArguments.Count; i++)
-                {
-                    var protobufArgument = protobufArguments[i];
-                    var argumentByteCount = argumentByteCounts[i];
-                    outputStream.Write(BitConverter.GetBytes(argumentByteCount), 0, 4);
-                    protobufArgument.WriteTo(outputStream);
-                }
+                yield return argument;
             }
         }
 
-        public bool TryParseMessage(
-            ref ReadOnlySequence<byte> input, 
-            out HubMessage message, 
-            IReadOnlyList<Type> protobufTypes
-        )
+        protected override HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels)
         {
-            // At least 4 bytes are required to read the length of the message
-            if (input.Length < 4)
+            var protobuf = (InvocationMessageProtobuf) protobufModels.First();
+            var argumentProtobufs = protobufModels.Skip(1).Cast<object>().ToArray();
+
+            return new InvocationMessage(
+                protobuf.InvocationId, 
+                protobuf.Target, 
+                argumentProtobufs
+            )
             {
-                message = null;
-                return false;
-            }
-
-            var numberOfBodyBytes = BitConverter.ToInt32(input.Slice(0, 4).ToArray(), 0);
-            input = input.Slice(4);
-
-            if (input.Length < numberOfBodyBytes)
-            {
-                message = null;
-                return false;
-            }
-
-            using (var inputStream = input.AsStream())
-            {
-                var metadataProtobuf = new InvocationMessageProtobuf().MergeFixedDelimitedFrom(inputStream);
-
-                var protobufArguments = new object[metadataProtobuf.MessageIndices.Count];
-                for (var i = 0; i < metadataProtobuf.MessageIndices.Count; i++)
-                {
-                    var messageIndex = metadataProtobuf.MessageIndices[i];
-                    var protobufArgument = (IMessage) Activator.CreateInstance(protobufTypes[messageIndex]);
-                    protobufArgument.MergeFixedDelimitedFrom(inputStream);
-                    protobufArguments[i] = protobufArgument;
-                }
-
-                message = new InvocationMessage(
-                    metadataProtobuf.InvocationId, 
-                    metadataProtobuf.Target, 
-                    protobufArguments
-                )
-                {
-                    Headers = metadataProtobuf.Headers.Unflatten()
-                };
-                
-                input = input.Slice(numberOfBodyBytes);
-                return true;
-            }
+                Headers = protobuf.Headers.Unflatten()
+            };
         }
     }
 }

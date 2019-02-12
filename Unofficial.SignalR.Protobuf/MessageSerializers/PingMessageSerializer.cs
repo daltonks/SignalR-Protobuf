@@ -1,25 +1,23 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
+using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
-    public class PingMessageSerializer : IMessageSerializer
+    public class PingMessageSerializer : BaseMessageSerializer
     {
-        public ProtobufMessageType EnumType => ProtobufMessageType.Ping;
-        public Type MessageType => typeof(PingMessage);
+        public override ProtobufMessageType EnumType => ProtobufMessageType.Ping;
+        public override Type MessageType => typeof(PingMessage);
 
-        public void WriteMessage(HubMessage message, IBufferWriter<byte> output,
-            IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
+        protected override IEnumerable<IMessage> CreateProtobufModels(HubMessage message)
         {
-            
+            yield break;
         }
 
-        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, IReadOnlyList<Type> protobufTypes)
+        protected override HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels)
         {
-            message = PingMessage.Instance;
-            return true;
+            return PingMessage.Instance;
         }
     }
 }
