@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -15,7 +14,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         public abstract Type MessageType { get; }
 
         protected abstract IReadOnlyList<IMessage> CreateProtobufModels(HubMessage message);
-        protected abstract HubMessage CreateHubMessage(IReadOnlyList<object> protobufModels);
+        protected abstract HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels);
 
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
         {
@@ -29,17 +28,18 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
                 .Select(protobufModel => protobufModel?.CalculateSize() ?? 0)
                 .ToList();
 
-            var totalByteSize = 4 + 1 
-                                  + 2 * numberOfNullProtobufModels 
-                                  + (2 + 4) * numberOfNonNullProtobufModels 
-                                  + protobufByteSizes.Sum();
+            var totalByteSize = 4 // Total byte size (int)
+                              + 1 // Number of protobuf models (byte)
+                              + 2 * numberOfNullProtobufModels // Type (short) per null protobuf model
+                              + (2 + 4) * numberOfNonNullProtobufModels // Type (short) and byte size (int) per non-null protobuf model
+                              + protobufByteSizes.Sum(); // Total bytes of the protobuf models themselves
 
             using (var outputStream = output.AsStream())
             {
-                // Write total byte size
+                // Total byte size
                 outputStream.Write(BitConverter.GetBytes(totalByteSize), 0, 4);
 
-                // Write number of protobuf models
+                // Number of protobuf models
                 outputStream.WriteByte((byte) protobufModels.Count);
 
                 for (var i = 0; i < protobufModels.Count; i++)
@@ -49,24 +49,20 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 
                     if (protobufModel == null)
                     {
-                        // Write -1 as the model's type
+                        // Type: -1
                         outputStream.Write(BitConverter.GetBytes((short) -1), 0, 2);
                     }
                     else
                     {
                         var typeShort = protobufTypeToIndexMap[protobufModel.GetType()];
 
-                        // Write the model's type
+                        // Type
                         outputStream.Write(BitConverter.GetBytes(typeShort), 0, 2);
 
-                        // Write the model's byte size
+                        // Byte Size
                         outputStream.Write(BitConverter.GetBytes(byteSize), 0, 4);
 
-                        // Write the model type
-                        var typeIndex = protobufTypeToIndexMap[protobufModel.GetType()];
-                        outputStream.Write(BitConverter.GetBytes(typeIndex), 0, 2);
-
-                        // Write the model itself
+                        // Model
                         protobufModel.WriteTo(outputStream);
                     }
                 }
@@ -94,7 +90,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
             var numberOfProtobufModels = input.Slice(0, 1).ToArray()[0];
             input = input.Slice(1);
             
-            var protobufModels = new object[numberOfProtobufModels];
+            var protobufModels = new IMessage[numberOfProtobufModels];
 
             using (var inputStream = input.AsStream())
             {
