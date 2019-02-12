@@ -12,7 +12,8 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         public ProtobufMessageType EnumType => ProtobufMessageType.StreamItem;
         public Type MessageType => typeof(StreamItemMessage);
 
-        public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, int> protobufTypeToIndexMap)
+        public void WriteMessage(HubMessage message, IBufferWriter<byte> output,
+            IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
         {
             var streamItemMessage = (StreamItemMessage) message;
 

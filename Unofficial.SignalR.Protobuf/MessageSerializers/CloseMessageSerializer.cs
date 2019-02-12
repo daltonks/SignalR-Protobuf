@@ -12,7 +12,8 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         public ProtobufMessageType EnumType => ProtobufMessageType.Close;
         public Type MessageType => typeof(CloseMessage);
 
-        public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, int> protobufTypeToIndexMap)
+        public void WriteMessage(HubMessage message, IBufferWriter<byte> output,
+            IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
         {
             var closeMessage = (CloseMessage) message;
 

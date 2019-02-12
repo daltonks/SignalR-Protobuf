@@ -12,20 +12,18 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         public ProtobufMessageType EnumType => ProtobufMessageType.HandshakeResponse;
         public Type MessageType => typeof(HandshakeResponseMessage);
 
-        public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, int> protobufTypeToIndexMap)
+        public void WriteMessage(HubMessage message, IBufferWriter<byte> output,
+            IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
         {
             var handshakeResponseMessage = (HandshakeResponseMessage) message;
 
-            var protobuf = new HandshakeResponseMessageProtobuf
-            {
-                Error = handshakeResponseMessage.Error
-            };
-
-            var bytes = protobuf.ToByteArray();
-            // Write number of bytes
-            output.Write(BitConverter.GetBytes(bytes.Length));
-            // Write bytes
-            output.Write(bytes);
+            output.WriteMessage(
+                new HandshakeResponseMessageProtobuf
+                {
+                    Error = handshakeResponseMessage.Error
+                },
+                protobufTypeToIndexMap
+            );
         }
 
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, IReadOnlyList<Type> protobufTypes)

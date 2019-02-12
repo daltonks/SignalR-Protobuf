@@ -14,20 +14,17 @@ message InvocationMessageProtobuf {
 	NullableString invocationId = 1;
 	string target = 2;
 	repeated string headers = 3;
-	repeated int32 messageIndices = 4;
 }
 
 message StreamInvocationMessageProtobuf {
 	NullableString invocationId = 1;
 	string target = 2;
 	repeated string headers = 3;
-	repeated int32 messageIndices = 4;
 }
 
 message StreamItemMessageProtobuf {
 	string invocationId = 1;
 	repeated string headers = 2;
-	int32 messageIndex = 3;
 }
 
 message NullableString {

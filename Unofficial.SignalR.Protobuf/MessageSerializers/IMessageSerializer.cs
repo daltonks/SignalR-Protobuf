@@ -9,7 +9,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
     {
         ProtobufMessageType EnumType { get; }
         Type MessageType { get; }
-        void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, int> protobufTypeToIndexMap);
+        void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, short> protobufTypeToIndexMap);
         bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, IReadOnlyList<Type> protobufTypes);
     }
 }
