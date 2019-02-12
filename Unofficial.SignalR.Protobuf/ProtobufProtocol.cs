@@ -13,6 +13,7 @@ namespace Unofficial.SignalR.Protobuf
 {
     public enum ProtobufMessageType
     {
+        CancelInvocation,
         Close,
         HandshakeRequest,
         HandshakeResponse,
@@ -31,6 +32,7 @@ namespace Unofficial.SignalR.Protobuf
         {
             var serializers = new IMessageSerializer[]
             {
+                new CancelInvocationMessageSerializer(), 
                 new CloseMessageSerializer(), 
                 new HandshakeRequestMessageSerializer(), 
                 new HandshakeResponseMessageSerializer(), 

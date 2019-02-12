@@ -2,6 +2,11 @@
 
 package Unofficial.SignalR.Protobuf;
 
+message CancelInvocationMessageProtobuf {
+	string invocationId = 1;
+	repeated string headers = 2;
+}
+
 message CloseMessageProtobuf {
 	NullableString error = 1;
 }
