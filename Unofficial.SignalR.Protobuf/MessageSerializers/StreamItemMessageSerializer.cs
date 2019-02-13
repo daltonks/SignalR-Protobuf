@@ -1,91 +1,39 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Nerdbank.Streams;
+using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
-    public class StreamItemMessageSerializer : IMessageSerializer
+    public class StreamItemMessageSerializer : BaseMessageSerializer
     {
-        public IEnumerable<byte> SupportedTypeBytes => new[]
-        {
-            ProtobufProtocol.StreamItemType
-        };
+        public override ProtobufMessageType EnumType => ProtobufMessageType.StreamItem;
+        public override Type MessageType => typeof(StreamItemMessage);
 
-        public IEnumerable<Type> SupportedTypes => new[]
-        {
-            typeof(StreamItemMessage)
-        };
-
-        public byte GetTypeByte(HubMessage message)
-        {
-            return ProtobufProtocol.StreamItemType;
-        }
-
-        public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, int> protobufTypeToIndexMap)
+        protected override IEnumerable<IMessage> CreateProtobufModels(HubMessage message)
         {
             var streamItemMessage = (StreamItemMessage) message;
 
-            var item = streamItemMessage.Item;
-            var protobufItem = (IMessage) item;
-            var metadataProtobuf = new StreamItemMessageProtobuf
+            yield return new StreamItemMessageProtobuf
             {
                 InvocationId = streamItemMessage.InvocationId,
-                Headers = { streamItemMessage.Headers.Flatten() },
-                MessageIndex = protobufTypeToIndexMap[item.GetType()]
+                Headers = { streamItemMessage.Headers.Flatten() }
             };
 
-            var metadataByteCount = metadataProtobuf.CalculateSize();
-            var itemByteCount = protobufItem.CalculateSize();
-            var totalByteCount = metadataByteCount + itemByteCount + 8;
-
-            using (var outputStream = output.AsStream())
-            {
-                outputStream.Write(BitConverter.GetBytes(totalByteCount), 0, 4);
-
-                outputStream.Write(BitConverter.GetBytes(metadataByteCount), 0, 4);
-                metadataProtobuf.WriteTo(outputStream);
-
-                outputStream.Write(BitConverter.GetBytes(itemByteCount), 0, 4);
-                protobufItem.WriteTo(outputStream);
-            }
+            yield return (IMessage) streamItemMessage.Item;
         }
 
-        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, byte typeByte, IReadOnlyList<Type> protobufTypes)
+        protected override HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels)
         {
-            // At least 4 bytes are required to read the length of the message
-            if (input.Length < 4)
+            var protobuf = (StreamItemMessageProtobuf) protobufModels.First();
+            var itemProtobuf = protobufModels[1];
+
+            return new StreamItemMessage(protobuf.InvocationId, itemProtobuf)
             {
-                message = null;
-                return false;
-            }
-
-            var numberOfBodyBytes = BitConverter.ToInt32(input.Slice(0, 4).ToArray(), 0);
-            input = input.Slice(4);
-
-            if (input.Length < numberOfBodyBytes)
-            {
-                message = null;
-                return false;
-            }
-
-            using (var inputStream = input.AsStream())
-            {
-                var metadataProtobuf = new StreamItemMessageProtobuf().MergeFixedDelimitedFrom(inputStream);
-
-                var protobufItem = (IMessage) Activator.CreateInstance(protobufTypes[metadataProtobuf.MessageIndex]);
-                protobufItem.MergeFixedDelimitedFrom(inputStream);
-
-                message = new StreamItemMessage(metadataProtobuf.InvocationId, protobufItem)
-                {
-                    Headers = metadataProtobuf.Headers.Unflatten()
-                };
-
-                input = input.Slice(numberOfBodyBytes);
-                return true;
-            }
+                Headers = protobuf.Headers.Unflatten()
+            };
         }
     }
 }
