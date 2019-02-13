@@ -85,14 +85,11 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
                 return false;
             }
 
-            input = input.Slice(4);
-
-            var numberOfProtobufModels = input.Slice(0, 1).ToArray()[0];
-            input = input.Slice(1);
+            var numberOfProtobufModels = input.Slice(4, 1).ToArray()[0];
             
             var protobufModels = new IMessage[numberOfProtobufModels];
 
-            using (var inputStream = input.AsStream())
+            using (var inputStream = input.Slice(5).AsStream())
             {
                 for (var i = 0; i < numberOfProtobufModels; i++)
                 {
@@ -108,6 +105,8 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
                     }
                 }
             }
+
+            input = input.Slice(totalByteSize);
 
             message = CreateHubMessage(protobufModels);
             return true;
