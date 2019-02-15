@@ -11,7 +11,7 @@ using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 
 namespace Unofficial.SignalR.Protobuf
 {
-    public enum ProtobufMessageType
+    internal enum ProtobufMessageType
     {
         CancelInvocation,
         Close,

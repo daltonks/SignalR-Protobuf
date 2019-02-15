@@ -5,9 +5,9 @@ using Google.Protobuf;
 namespace Unofficial.SignalR.Protobuf
 {
     // ReSharper disable once InconsistentNaming
-    public static class IMessageExtensions
+    internal static class IMessageExtensions
     {
-        internal static T MergeFixedDelimitedFrom<T>(this T protobufMessage, Stream stream) where T : IMessage
+        internal static void MergeFixedDelimitedFrom<T>(this T protobufMessage, Stream stream) where T : IMessage
         {
             var lengthBytes = new byte[4];
             stream.Read(lengthBytes, 0, 4);
@@ -17,8 +17,6 @@ namespace Unofficial.SignalR.Protobuf
             {
                 protobufMessage.MergeFrom(limitedInputStream);
             }
-
-            return protobufMessage;
         }
     }
 }

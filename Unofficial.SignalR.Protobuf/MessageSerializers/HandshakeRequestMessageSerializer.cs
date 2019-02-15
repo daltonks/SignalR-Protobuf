@@ -7,7 +7,7 @@ using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
-    public class HandshakeRequestMessageSerializer : BaseMessageSerializer
+    internal class HandshakeRequestMessageSerializer : BaseMessageSerializer
     {
         public override ProtobufMessageType EnumType => ProtobufMessageType.HandshakeRequest;
         public override Type MessageType => typeof(HandshakeRequestMessage);

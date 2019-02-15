@@ -8,7 +8,7 @@ using Nerdbank.Streams;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
 {
-    public abstract class BaseMessageSerializer : IMessageSerializer
+    internal abstract class BaseMessageSerializer : IMessageSerializer
     {
         public abstract ProtobufMessageType EnumType { get; }
         public abstract Type MessageType { get; }

@@ -7,7 +7,7 @@ using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
-    public class StreamItemMessageSerializer : BaseMessageSerializer
+    internal class StreamItemMessageSerializer : BaseMessageSerializer
     {
         public override ProtobufMessageType EnumType => ProtobufMessageType.StreamItem;
         public override Type MessageType => typeof(StreamItemMessage);

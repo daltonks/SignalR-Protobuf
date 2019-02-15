@@ -3,7 +3,7 @@
 namespace Unofficial.SignalR.Protobuf
 {
     // ReSharper disable once InconsistentNaming
-    public static class IDictionaryExtensions
+    internal static class IDictionaryExtensions
     {
         internal static IEnumerable<T> Flatten<T>(this IDictionary<T, T> dictionary)
         {
