@@ -7,7 +7,7 @@ using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
-    public class CompletionMessageSerializer : BaseMessageSerializer
+    internal class CompletionMessageSerializer : BaseMessageSerializer
     {
         public override ProtobufMessageType EnumType => ProtobufMessageType.Completion;
         public override Type MessageType => typeof(CompletionMessage);

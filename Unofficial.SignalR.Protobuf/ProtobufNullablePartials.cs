@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Unofficial.SignalR.Protobuf
 {
-    public partial class NullableString
+    internal partial class NullableString
     {
         public static implicit operator string(NullableString nullableProto)
         {

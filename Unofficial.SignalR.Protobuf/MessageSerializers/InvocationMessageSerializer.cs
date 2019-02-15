@@ -7,7 +7,7 @@ using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
-    public class InvocationMessageSerializer : BaseMessageSerializer
+    internal class InvocationMessageSerializer : BaseMessageSerializer
     {
         public override ProtobufMessageType EnumType => ProtobufMessageType.Invocation;
         public override Type MessageType => typeof(InvocationMessage);

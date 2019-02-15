@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Update="models.proto" GrpcServices="None" />
+    <Protobuf Update="models.proto" GrpcServices="None" Access="Internal" />
   </ItemGroup>
 
 

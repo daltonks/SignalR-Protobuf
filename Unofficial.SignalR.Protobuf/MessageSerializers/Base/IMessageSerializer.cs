@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
 {
-    public interface IMessageSerializer
+    internal interface IMessageSerializer
     {
         ProtobufMessageType EnumType { get; }
         Type MessageType { get; }
