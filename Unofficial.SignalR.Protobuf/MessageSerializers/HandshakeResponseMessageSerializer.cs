@@ -15,17 +15,18 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         protected override IEnumerable<IMessage> CreateProtobufModels(HubMessage message)
         {
             var handshakeResponseMessage = (HandshakeResponseMessage) message;
-
+            
             yield return new HandshakeResponseMessageProtobuf
             {
-                Error = handshakeResponseMessage.Error
+                Error = handshakeResponseMessage.Error,
+                MinorVersion = handshakeResponseMessage.MinorVersion
             };
         }
 
         protected override HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels)
         {
             var protobuf = (HandshakeResponseMessageProtobuf) protobufModels.Single();
-            return new HandshakeResponseMessage(protobuf.Error);
+            return new HandshakeResponseMessage(protobuf.MinorVersion, protobuf.Error);
         }
     }
 }

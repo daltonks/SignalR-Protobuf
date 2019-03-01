@@ -25,6 +25,7 @@ message HandshakeRequestMessageProtobuf {
 
 message HandshakeResponseMessageProtobuf {
 	NullableString error = 1;
+	int32 minorVersion = 2;
 }
 
 message InvocationMessageProtobuf {
