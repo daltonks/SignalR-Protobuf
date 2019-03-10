@@ -13,11 +13,13 @@ namespace Unofficial.SignalR.Protobuf
     {
         public static TBuilder AddProtobufProtocol<TBuilder>(
             this TBuilder builder,
-            IEnumerable<MessageDescriptor> messageDescriptors
+            params IEnumerable<MessageDescriptor>[] messageDescriptors
         ) where TBuilder : ISignalRBuilder
         {
             return builder.AddProtobufProtocol(
-                messageDescriptors.Select(messageDescriptor => messageDescriptor.ClrType)
+                messageDescriptors
+                    .SelectMany(descriptors => descriptors)
+                    .Select(messageDescriptor => messageDescriptor.ClrType)
             );
         }
 
