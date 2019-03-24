@@ -19,14 +19,15 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
             yield return new HandshakeResponseMessageProtobuf
             {
                 Error = handshakeResponseMessage.Error,
-                MinorVersion = handshakeResponseMessage.MinorVersion
+                // TODO: .NET Core 3: MinorVersion = handshakeResponseMessage.MinorVersion
             };
         }
 
         protected override HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels)
         {
             var protobuf = (HandshakeResponseMessageProtobuf) protobufModels.Single();
-            return new HandshakeResponseMessage(protobuf.MinorVersion, protobuf.Error);
+            // TODO: .NET Core 3: return new HandshakeResponseMessage(protobuf.MinorVersion, protobuf.Error);
+            return new HandshakeResponseMessage(protobuf.Error);
         }
     }
 }
