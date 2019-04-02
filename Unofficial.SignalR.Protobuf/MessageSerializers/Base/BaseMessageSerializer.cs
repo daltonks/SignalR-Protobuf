@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Nerdbank.Streams;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
 {
@@ -34,7 +34,9 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
                               + (2 + 4) * numberOfNonNullProtobufModels // Type (short) and byte size (int) per non-null protobuf model
                               + protobufByteSizes.Sum(); // Total bytes of the protobuf models themselves
 
-            using (var outputStream = output.AsStream())
+            var byteArray = ArrayPool<byte>.Shared.Rent(totalByteSize);
+
+            using (var outputStream = new MemoryStream(byteArray))
             {
                 // Total byte size
                 outputStream.Write(BitConverter.GetBytes(totalByteSize), 0, 4);
@@ -67,6 +69,10 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
                     }
                 }
             }
+
+            output.Write(new ReadOnlySpan<byte>(byteArray, 0, totalByteSize));
+
+            ArrayPool<byte>.Shared.Return(byteArray);
         }
         
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, IReadOnlyList<Type> protobufTypes)
@@ -89,7 +95,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
             
             var protobufModels = new IMessage[numberOfProtobufModels];
 
-            using (var inputStream = input.Slice(5).AsStream())
+            using (var inputStream = new MemoryStream(input.Slice(5).ToArray()))
             {
                 for (var i = 0; i < numberOfProtobufModels; i++)
                 {
