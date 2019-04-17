@@ -5,7 +5,7 @@
 ## To use
 Call `SignalRBuilderExtensions.AddProtobufProtocol` with the `MessageDescriptors` or `Types` of the Protobuf messages that you wish to serialize. The types need to be specified up-front in order to know which type to use when deserializing. The server and client must supply the same types in the same order for deserializing to work properly.
 
-# Supported
+## Supported
 - Calls that have any number of Protobuf arguments
 - `List<IMessage>` handling. Note that there is overhead for each item in the list though (int type and byte size), so if polymorphism isn't needed, use a Protobuf model with `repeated` instead.
 
