@@ -2,7 +2,7 @@
 using System.IO;
 using Google.Protobuf;
 
-namespace Unofficial.SignalR.Protobuf
+namespace Unofficial.SignalR.Protobuf.Util
 {
     // ReSharper disable once InconsistentNaming
     internal static class IMessageExtensions
@@ -13,6 +13,11 @@ namespace Unofficial.SignalR.Protobuf
             stream.Read(lengthBytes, 0, 4);
 
             var numberOfBytes = BitConverter.ToInt32(lengthBytes, 0);
+            protobufMessage.MergeFrom(stream, numberOfBytes);
+        }
+
+        internal static void MergeFrom<T>(this T protobufMessage, Stream stream, int numberOfBytes) where T : IMessage
+        {
             using (var limitedInputStream = new LimitedInputStream(stream, numberOfBytes))
             {
                 protobufMessage.MergeFrom(limitedInputStream);

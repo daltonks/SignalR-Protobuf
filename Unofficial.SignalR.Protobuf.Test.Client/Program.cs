@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Client;
 using Unofficial.SignalR.Protobuf.Test.Core;
 
@@ -13,15 +15,15 @@ namespace Unofficial.SignalR.Protobuf.Test.Client
             try
             {
                 var client = new HubConnectionBuilder()
-                    .WithUrl("http://localhost:51429/realtime")
+                    .WithUrl("http://localhost:57052/realtime")
                     .AddProtobufProtocol(MessagesReflection.Descriptor.MessageTypes)
                     .Build();
 
-                client.On<TestMessage>(
+                client.On<List<IMessage>>(
                     "HandleTestMessage",
                     message =>
                     {
-                        Debug.WriteLine($"Client received \"{message.Value}\"");
+                        Debug.WriteLine($"Client received {message.Count} items!");
                     }
                 );
 

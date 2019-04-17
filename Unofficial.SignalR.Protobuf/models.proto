@@ -2,6 +2,14 @@
 
 package Unofficial.SignalR.Protobuf;
 
+message MessageMetadata {
+	repeated ItemMetadata items = 2;
+}
+
+message ItemMetadata {
+	repeated int32 typesAndSizes = 2;
+}
+
 message CancelInvocationMessageProtobuf {
 	string invocationId = 1;
 	repeated string headers = 2;

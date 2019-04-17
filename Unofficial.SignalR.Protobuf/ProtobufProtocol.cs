@@ -73,10 +73,10 @@ namespace Unofficial.SignalR.Protobuf
         }
 
         public string Name => nameof(ProtobufProtocol);
-        public int Version => 1;
+        public int Version => 2;
         public int MinorVersion => 0;
         public TransferFormat TransferFormat => TransferFormat.Binary;
-        public bool IsVersionSupported(int version) => true;
+        public bool IsVersionSupported(int version) => version == Version;
         
         public ReadOnlyMemory<byte> GetMessageBytes(HubMessage message)
         {

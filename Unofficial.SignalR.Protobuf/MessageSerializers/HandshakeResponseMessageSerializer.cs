@@ -4,6 +4,7 @@ using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
+using Unofficial.SignalR.Protobuf.Util;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
@@ -12,7 +13,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         public override ProtobufMessageType EnumType => ProtobufMessageType.HandshakeResponse;
         public override Type MessageType => typeof(HandshakeResponseMessage);
 
-        protected override IEnumerable<IMessage> CreateProtobufModels(HubMessage message)
+        protected override IEnumerable<object> CreateItems(HubMessage message)
         {
             var handshakeResponseMessage = (HandshakeResponseMessage) message;
             
@@ -23,9 +24,9 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
             };
         }
 
-        protected override HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels)
+        protected override HubMessage CreateHubMessage(IReadOnlyList<object> items)
         {
-            var protobuf = (HandshakeResponseMessageProtobuf) protobufModels.Single();
+            var protobuf = (HandshakeResponseMessageProtobuf) items.Single();
             // TODO: .NET Core 3: return new HandshakeResponseMessage(protobuf.MinorVersion, protobuf.Error);
             return new HandshakeResponseMessage(protobuf.Error);
         }
