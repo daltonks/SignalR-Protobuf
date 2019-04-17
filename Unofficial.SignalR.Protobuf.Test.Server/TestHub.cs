@@ -1,5 +1,7 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR;
 using Unofficial.SignalR.Protobuf.Test.Core;
 
@@ -13,7 +15,10 @@ namespace Unofficial.SignalR.Protobuf.Test.Server
             
             await Clients.Caller.SendAsync(
                 "HandleTestMessage", 
-                new TestMessage { Value = "This came from the server!" }
+                new List<IMessage> {
+                    new TestMessage { Value = "First message from the server!" },
+                    new TestMessage { Value = "Second message from the server!" }
+                }
             );
 
             await base.OnConnectedAsync();

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Unofficial.SignalR.Protobuf
+namespace Unofficial.SignalR.Protobuf.Util
 {
     // Copied from Google.Protobuf so that I can delimit streams without variable integers.
     internal sealed class LimitedInputStream : Stream

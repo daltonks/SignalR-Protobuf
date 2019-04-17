@@ -4,6 +4,7 @@ using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
+using Unofficial.SignalR.Protobuf.Util;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
@@ -12,7 +13,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         public override ProtobufMessageType EnumType => ProtobufMessageType.CancelInvocation;
         public override Type MessageType => typeof(CancelInvocationMessage);
 
-        protected override IEnumerable<IMessage> CreateProtobufModels(HubMessage message)
+        protected override IEnumerable<object> CreateItems(HubMessage message)
         {
             var cancelInvocationMessage = (CancelInvocationMessage) message;
 
@@ -23,9 +24,9 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
             };
         }
 
-        protected override HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels)
+        protected override HubMessage CreateHubMessage(IReadOnlyList<object> items)
         {
-            var protobuf = (CancelInvocationMessageProtobuf) protobufModels.Single();
+            var protobuf = (CancelInvocationMessageProtobuf) items.Single();
             
             return new CancelInvocationMessage(protobuf.InvocationId)
             {

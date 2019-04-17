@@ -4,6 +4,7 @@ using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
+using Unofficial.SignalR.Protobuf.Util;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
@@ -12,7 +13,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
         public override ProtobufMessageType EnumType => ProtobufMessageType.Completion;
         public override Type MessageType => typeof(CompletionMessage);
 
-        protected override IEnumerable<IMessage> CreateProtobufModels(HubMessage message)
+        protected override IEnumerable<object> CreateItems(HubMessage message)
         {
             var completionMessage = (CompletionMessage) message;
 
@@ -24,13 +25,13 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
                 HasResult = completionMessage.HasResult
             };
 
-            yield return (IMessage) completionMessage.Result;
+            yield return completionMessage.Result;
         }
 
-        protected override HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels)
+        protected override HubMessage CreateHubMessage(IReadOnlyList<object> items)
         {
-            var protobuf = (CompletionMessageProtobuf) protobufModels.First();
-            var resultProtobuf = protobufModels[1];
+            var protobuf = (CompletionMessageProtobuf) items.First();
+            var resultProtobuf = items[1];
 
             return new CompletionMessage(
                 protobuf.InvocationId, 

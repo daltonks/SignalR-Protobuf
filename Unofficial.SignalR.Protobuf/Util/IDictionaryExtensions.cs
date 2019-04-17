@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Unofficial.SignalR.Protobuf
+namespace Unofficial.SignalR.Protobuf.Util
 {
     // ReSharper disable once InconsistentNaming
     internal static class IDictionaryExtensions

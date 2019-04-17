@@ -6,17 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="SignalR Connection String.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="SignalR Connection String.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Azure.SignalR" Version="1.0.6" />
+    <PackageReference Include="Microsoft.Azure.SignalR" Version="1.0.8" />
   </ItemGroup>
 
   <ItemGroup>

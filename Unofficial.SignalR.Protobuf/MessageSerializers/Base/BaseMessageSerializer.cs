@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Unofficial.SignalR.Protobuf.Util;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
 {
@@ -13,66 +14,55 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
         public abstract ProtobufMessageType EnumType { get; }
         public abstract Type MessageType { get; }
 
-        protected abstract IEnumerable<IMessage> CreateProtobufModels(HubMessage message);
-        protected abstract HubMessage CreateHubMessage(IReadOnlyList<IMessage> protobufModels);
+        protected abstract IEnumerable<object> CreateItems(HubMessage message);
+        protected abstract HubMessage CreateHubMessage(IReadOnlyList<object> items);
 
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
         {
-            var protobufModels = CreateProtobufModels(message).ToList();
-
-            var numberOfNullProtobufModels = protobufModels.Count(protobufModel => protobufModel == null);
-            var numberOfNonNullProtobufModels = protobufModels.Count - numberOfNullProtobufModels;
-
-            // Calculate byte sizes
-            var protobufByteSizes = protobufModels
-                .Select(protobufModel => protobufModel?.CalculateSize() ?? 0)
+            var itemsMetadata = CreateItems(message)
+                .Select(item => ItemMetadata.Create(item, protobufTypeToIndexMap))
                 .ToList();
 
+            var metadata = new MessageMetadata
+            {
+                Items = { itemsMetadata }
+            };
+
+            var metadataByteSize = metadata.CalculateSize();
+
             var totalByteSize = 4 // Total byte size (int)
-                              + 1 // Number of protobuf models (byte)
-                              + 2 * numberOfNullProtobufModels // Type (short) per null protobuf model
-                              + (2 + 4) * numberOfNonNullProtobufModels // Type (short) and byte size (int) per non-null protobuf model
-                              + protobufByteSizes.Sum(); // Total bytes of the protobuf models themselves
+                              + 4 + metadataByteSize // Metadata byte size (int) and metadata itself
+                              + itemsMetadata
+                                  .Select(itemMetadata => itemMetadata.CalculateTotalSizeBytes())
+                                  .Sum(); // Total bytes of the protobuf models
 
             var byteArray = ArrayPool<byte>.Shared.Rent(totalByteSize);
-
-            using (var outputStream = new MemoryStream(byteArray))
+            try
             {
-                // Total byte size
-                outputStream.Write(BitConverter.GetBytes(totalByteSize), 0, 4);
-
-                // Number of protobuf models
-                outputStream.WriteByte((byte) protobufModels.Count);
-
-                for (var i = 0; i < protobufModels.Count; i++)
+                using (var outputStream = new MemoryStream(byteArray))
                 {
-                    var protobufModel = protobufModels[i];
-                    var byteSize = protobufByteSizes[i];
+                    // Total byte size
+                    outputStream.Write(BitConverter.GetBytes(totalByteSize), 0, 4);
 
-                    if (protobufModel == null)
+                    // Metadata byte size
+                    outputStream.Write(BitConverter.GetBytes(metadataByteSize), 0, 4);
+
+                    // Metadata
+                    metadata.WriteTo(outputStream);
+
+                    // Other protobufs
+                    foreach (var protobufItem in metadata.Items.SelectMany(item => item.NonNullProtobufs))
                     {
-                        // Type: -1
-                        outputStream.Write(BitConverter.GetBytes((short) -1), 0, 2);
-                    }
-                    else
-                    {
-                        var typeShort = protobufTypeToIndexMap[protobufModel.GetType()];
-
-                        // Type
-                        outputStream.Write(BitConverter.GetBytes(typeShort), 0, 2);
-
-                        // Byte Size
-                        outputStream.Write(BitConverter.GetBytes(byteSize), 0, 4);
-
-                        // Model
-                        protobufModel.WriteTo(outputStream);
+                        protobufItem.WriteTo(outputStream);
                     }
                 }
+
+                output.Write(new ReadOnlySpan<byte>(byteArray, 0, totalByteSize));
             }
-
-            output.Write(new ReadOnlySpan<byte>(byteArray, 0, totalByteSize));
-
-            ArrayPool<byte>.Shared.Return(byteArray);
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(byteArray);
+            }
         }
         
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, IReadOnlyList<Type> protobufTypes)
@@ -91,31 +81,33 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
                 return false;
             }
 
-            var numberOfProtobufModels = input.Slice(4, 1).ToArray()[0];
-            
-            var protobufModels = new IMessage[numberOfProtobufModels];
+            var protobufInput = input.Slice(4);
 
-            using (var inputStream = new MemoryStream(input.Slice(5).ToArray()))
+            var byteArray = ArrayPool<byte>.Shared.Rent((int) protobufInput.Length);
+            try
             {
-                for (var i = 0; i < numberOfProtobufModels; i++)
+                protobufInput.CopyTo(byteArray);
+
+                using (var inputStream = new MemoryStream(byteArray))
                 {
-                    var typeShortBytes = new byte[2];
-                    inputStream.Read(typeShortBytes, 0, 2);
-                    var typeIndex = BitConverter.ToInt16(typeShortBytes, 0);
+                    var metadata = new MessageMetadata();
+                    metadata.MergeFixedDelimitedFrom(inputStream);
 
-                    if (typeIndex != -1)
-                    {
-                        var protobufModel = (IMessage) Activator.CreateInstance(protobufTypes[typeIndex]);
-                        protobufModel.MergeFixedDelimitedFrom(inputStream);
-                        protobufModels[i] = protobufModel;
-                    }
+                    message = CreateHubMessage(
+                        metadata.Items
+                            .Select(itemMetadata => itemMetadata.CreateItem(inputStream, protobufTypes))
+                            .ToList()
+                    );
                 }
+
+                input = input.Slice(totalByteSize);
+
+                return true;
             }
-
-            input = input.Slice(totalByteSize);
-
-            message = CreateHubMessage(protobufModels);
-            return true;
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(byteArray);
+            }
         }
     }
 }
