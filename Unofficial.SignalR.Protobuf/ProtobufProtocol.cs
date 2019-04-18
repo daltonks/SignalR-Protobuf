@@ -101,7 +101,7 @@ namespace Unofficial.SignalR.Protobuf
 
             var enumType = (ProtobufMessageType) input.Slice(0, 1).ToArray()[0];
             var processedSequence = input.Slice(1);
-
+            
             var serializer = EnumTypeToSerializerMap[enumType];
             var successfullyParsed = serializer.TryParseMessage(ref processedSequence, out message, _protobufTypes);
 

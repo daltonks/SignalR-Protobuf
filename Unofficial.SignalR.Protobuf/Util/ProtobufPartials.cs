@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Google.Protobuf;
@@ -13,21 +14,16 @@ namespace Unofficial.SignalR.Protobuf
         {
             var result = new ItemMetadata();
 
-            switch (obj)
+            if (obj == null || obj is IMessage)
             {
-                case IEnumerable<IMessage> items:
+                AddTypeAndSize((IMessage) obj);
+            }
+            else
+            {
+                result.TypesAndSizes.Add(-2);
+                foreach (var item in (IEnumerable) obj)
                 {
-                    result.TypesAndSizes.Add(-2);
-                    foreach (var item in items)
-                    {
-                        AddTypeAndSize(item);
-                    }
-                    break;
-                }
-                default:
-                {
-                    AddTypeAndSize(obj as IMessage);
-                    break;
+                    AddTypeAndSize((IMessage) item);
                 }
             }
 
