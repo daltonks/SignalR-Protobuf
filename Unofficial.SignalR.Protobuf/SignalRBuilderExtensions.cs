@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using Google.Protobuf.Reflection;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -11,18 +9,6 @@ namespace Unofficial.SignalR.Protobuf
 {
     public static class SignalRBuilderExtensions
     {
-        public static TBuilder AddProtobufProtocol<TBuilder>(
-            this TBuilder builder,
-            params IEnumerable<MessageDescriptor>[] messageDescriptors
-        ) where TBuilder : ISignalRBuilder
-        {
-            return builder.AddProtobufProtocol(
-                messageDescriptors
-                    .SelectMany(descriptors => descriptors)
-                    .Select(messageDescriptor => messageDescriptor.ClrType)
-            );
-        }
-
         public static TBuilder AddProtobufProtocol<TBuilder>(
             this TBuilder builder, 
             IEnumerable<Type> messageTypes
