@@ -23,7 +23,7 @@ namespace Unofficial.SignalR.Protobuf.Test.Server
 
             services
                 .AddSignalR()
-                .AddProtobufProtocol(MessagesReflection.Descriptor.MessageTypes);
+                .AddProtobufProtocol(new [] { typeof(TestMessage) });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
