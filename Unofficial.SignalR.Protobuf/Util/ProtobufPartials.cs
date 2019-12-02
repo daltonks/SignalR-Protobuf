@@ -10,7 +10,7 @@ namespace Unofficial.SignalR.Protobuf
 {
     internal partial class ItemMetadata
     {
-        public static ItemMetadata Create(object obj, IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
+        public static ItemMetadata Create(object obj, IReadOnlyDictionary<Type, int> protobufTypeToIndexMap)
         {
             var result = new ItemMetadata();
 
@@ -70,7 +70,7 @@ namespace Unofficial.SignalR.Protobuf
             }
         }
 
-        public object CreateItem(Stream stream, IReadOnlyList<Type> protobufTypes)
+        public object CreateItem(Stream stream, IReadOnlyDictionary<int, Type> protobufIndexToTypeMap)
         {
             switch (TypesAndSizes[0])
             {
@@ -99,7 +99,7 @@ namespace Unofficial.SignalR.Protobuf
                     case -1:
                         return null;
                     default:
-                        var protobufModel = (IMessage) Activator.CreateInstance(protobufTypes[typeIndex]);
+                        var protobufModel = (IMessage) Activator.CreateInstance(protobufIndexToTypeMap[typeIndex]);
                         protobufModel.MergeFrom(stream, sizeBytes);
                         return protobufModel;
                 }

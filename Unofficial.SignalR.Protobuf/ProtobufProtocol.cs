@@ -11,23 +11,25 @@ using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 
 namespace Unofficial.SignalR.Protobuf
 {
-    internal enum ProtobufMessageType
+    internal enum HubMessageType
     {
-        CancelInvocation,
-        Close,
-        Completion,
-        HandshakeRequest,
-        HandshakeResponse,
-        Invocation,
-        Ping,
-        StreamInvocation,
-        StreamItem
+        CancelInvocation = 0,
+        Close = 1,
+        Completion = 2,
+        HandshakeRequest = 3,
+        HandshakeResponse = 4,
+        // InvocationBindingFailure not used, because it is not sent over the wire
+        Invocation = 5,
+        Ping = 6,
+        // StreamBindingFailure not used, because it is not sent over the wire
+        StreamInvocation = 7,
+        StreamItem = 8
     }
 
     public class ProtobufProtocol : IHubProtocol
     {
         private static readonly Dictionary<Type, IMessageSerializer> TypeToSerializerMap = new Dictionary<Type, IMessageSerializer>();
-        private static readonly Dictionary<ProtobufMessageType, IMessageSerializer> EnumTypeToSerializerMap = new Dictionary<ProtobufMessageType, IMessageSerializer>();
+        private static readonly Dictionary<HubMessageType, IMessageSerializer> EnumTypeToSerializerMap = new Dictionary<HubMessageType, IMessageSerializer>();
 
         static ProtobufProtocol()
         {
@@ -46,35 +48,76 @@ namespace Unofficial.SignalR.Protobuf
 
             foreach (var serializer in serializers)
             {
-                EnumTypeToSerializerMap[serializer.EnumType] = serializer;
+                EnumTypeToSerializerMap[serializer.HubMessageType] = serializer;
                 TypeToSerializerMap[serializer.MessageType] = serializer;
             }
         }
         
-        private readonly List<Type> _protobufTypes = new List<Type>();
-        private readonly Dictionary<Type, short> _protobufTypeToIndexMap = new Dictionary<Type, short>();
-
-        public ProtobufProtocol(IEnumerable<Type> protobufTypes)
+        private readonly Dictionary<int, Type> _protobufIndexToTypeMap = new Dictionary<int, Type>();
+        private readonly Dictionary<Type, int> _protobufTypeToIndexMap = new Dictionary<Type, int>();
+        
+        public ProtobufProtocol(IReadOnlyDictionary<int, Type> protobufTypes)
         {
-            // Append models.proto types to protobufTypes
-            protobufTypes = ModelsReflection.Descriptor.MessageTypes.Select(messageType => messageType.ClrType)
-                .Concat(protobufTypes);
-
-            foreach (var protobufType in protobufTypes)
+            foreach (var pair in protobufTypes)
             {
-                if (!typeof(IMessage).IsAssignableFrom(protobufType))
+                var index = pair.Key;
+                var type = pair.Value;
+
+                if (index < 0)
                 {
-                    throw new ArgumentException($"{protobufType} is not a protobuf model ({nameof(IMessage)})");
+                    throw new ArgumentException(
+                        $"Index \"{index}\" for type {type} is less than 0",
+                        nameof(protobufTypes)
+                    );
                 }
 
-                _protobufTypeToIndexMap[protobufType] = (short) _protobufTypes.Count;
-                _protobufTypes.Add(protobufType);
+                if (!typeof(IMessage).IsAssignableFrom(type))
+                {
+                    throw new ArgumentException(
+                        $"{type} is not a protobuf model ({nameof(IMessage)})",
+                        nameof(protobufTypes)
+                    );
+                }
+            }
+            
+            var allPairs = protobufTypes
+                .Select(pair => (pair.Key, pair.Value))
+                .Concat(
+                    new[]
+                    {
+                        // Leave a 64 int gap for special type cases
+                        // (ex: nulls and enumerables)
+                        (-65, typeof(MessageMetadata)),
+                        (-66, typeof(ItemMetadata)),
+                        (-67, typeof(CancelInvocationMessageProtobuf)),
+                        (-68, typeof(CloseMessageProtobuf)),
+                        (-69, typeof(CompletionMessageProtobuf)),
+                        (-70, typeof(HandshakeRequestMessageProtobuf)),
+                        (-71, typeof(HandshakeResponseMessageProtobuf)),
+                        (-72, typeof(InvocationMessageProtobuf)),
+                        (-73, typeof(StreamInvocationMessageProtobuf)),
+                        (-74, typeof(StreamItemMessageProtobuf)),
+                        (-75, typeof(NullableString))
+                    }
+                );
+            foreach (var (index, type) in allPairs)
+            {
+                _protobufIndexToTypeMap[index] = type;
+                _protobufTypeToIndexMap[type] = index;
+            }
+
+            foreach (var modelsMessageType in ModelsReflection.Descriptor.MessageTypes)
+            {
+                var clrType = modelsMessageType.ClrType;
+                if (!_protobufTypeToIndexMap.ContainsKey(clrType))
+                {
+                    throw new Exception($"{clrType} is not mapped in {nameof(ProtobufProtocol)}");
+                }
             }
         }
 
         public string Name => nameof(ProtobufProtocol);
-        public int Version => 2;
-        public int MinorVersion => 0;
+        public int Version => 3;
         public TransferFormat TransferFormat => TransferFormat.Binary;
         public bool IsVersionSupported(int version) => version == Version;
         
@@ -86,7 +129,7 @@ namespace Unofficial.SignalR.Protobuf
         public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
         {
             var serializer = TypeToSerializerMap[message.GetType()];
-            output.Write(new[] { (byte) serializer.EnumType });
+            output.Write(new[] { (byte) serializer.HubMessageType });
             serializer.WriteMessage(message, output, _protobufTypeToIndexMap);
         }
 
@@ -99,11 +142,15 @@ namespace Unofficial.SignalR.Protobuf
                 return false;
             }
 
-            var enumType = (ProtobufMessageType) input.Slice(0, 1).ToArray()[0];
+            var enumType = (HubMessageType) input.Slice(0, 1).ToArray()[0];
             var processedSequence = input.Slice(1);
             
             var serializer = EnumTypeToSerializerMap[enumType];
-            var successfullyParsed = serializer.TryParseMessage(ref processedSequence, out message, _protobufTypes);
+            var successfullyParsed = serializer.TryParseMessage(
+                ref processedSequence, 
+                out message, 
+                _protobufIndexToTypeMap
+            );
 
             if (successfullyParsed)
             {

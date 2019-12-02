@@ -11,10 +11,14 @@ namespace Unofficial.SignalR.Protobuf
     {
         public static TBuilder AddProtobufProtocol<TBuilder>(
             this TBuilder builder, 
-            IEnumerable<Type> messageTypes
+            IReadOnlyDictionary<int, Type> protobufTypes
         ) where TBuilder : ISignalRBuilder
         {
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol>(new ProtobufProtocol(messageTypes)));
+            builder.Services.TryAddEnumerable(
+                ServiceDescriptor.Singleton<IHubProtocol>(
+                    new ProtobufProtocol(protobufTypes)
+                )
+            );
             return builder;
         }
     }

@@ -10,7 +10,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
     internal class CloseMessageSerializer : BaseMessageSerializer
     {
-        public override ProtobufMessageType EnumType => ProtobufMessageType.Close;
+        public override HubMessageType HubMessageType => HubMessageType.Close;
         public override Type MessageType => typeof(CloseMessage);
 
         protected override IEnumerable<object> CreateItems(HubMessage message)

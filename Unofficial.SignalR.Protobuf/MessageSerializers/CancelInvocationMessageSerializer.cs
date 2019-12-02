@@ -10,7 +10,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
     internal class CancelInvocationMessageSerializer : BaseMessageSerializer
     {
-        public override ProtobufMessageType EnumType => ProtobufMessageType.CancelInvocation;
+        public override HubMessageType HubMessageType => HubMessageType.CancelInvocation;
         public override Type MessageType => typeof(CancelInvocationMessage);
 
         protected override IEnumerable<object> CreateItems(HubMessage message)

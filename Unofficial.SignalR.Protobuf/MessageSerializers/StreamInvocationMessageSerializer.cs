@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
 using Unofficial.SignalR.Protobuf.Util;
@@ -10,7 +9,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
     internal class StreamInvocationMessageSerializer : BaseMessageSerializer
     {
-        public override ProtobufMessageType EnumType => ProtobufMessageType.StreamInvocation;
+        public override HubMessageType HubMessageType => HubMessageType.StreamInvocation;
         public override Type MessageType => typeof(StreamInvocationMessage);
 
         protected override IEnumerable<object> CreateItems(HubMessage message)
@@ -19,9 +18,10 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 
             yield return new StreamInvocationMessageProtobuf
             {
+                Headers = { invocationMessage.Headers.Flatten() },
                 InvocationId = invocationMessage.InvocationId,
                 Target = invocationMessage.Target,
-                Headers = { invocationMessage.Headers.Flatten() }
+                StreamIds = { invocationMessage.StreamIds ?? Enumerable.Empty<string>() }
             };
 
             foreach (var argument in invocationMessage.Arguments)
@@ -38,7 +38,8 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
             return new StreamInvocationMessage(
                 protobuf.InvocationId, 
                 protobuf.Target, 
-                argumentProtobufs
+                argumentProtobufs,
+                protobuf.StreamIds.ToArray()
             )
             {
                 Headers = protobuf.Headers.Unflatten()
