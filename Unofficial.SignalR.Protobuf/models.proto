@@ -39,12 +39,14 @@ message InvocationMessageProtobuf {
 	NullableString invocationId = 1;
 	string target = 2;
 	repeated string headers = 3;
+	repeated string streamIds = 4;
 }
 
 message StreamInvocationMessageProtobuf {
 	NullableString invocationId = 1;
 	string target = 2;
 	repeated string headers = 3;
+	repeated string streamIds = 4;
 }
 
 message StreamItemMessageProtobuf {

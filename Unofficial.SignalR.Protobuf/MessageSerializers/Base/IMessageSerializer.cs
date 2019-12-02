@@ -7,9 +7,19 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
 {
     internal interface IMessageSerializer
     {
-        ProtobufMessageType EnumType { get; }
+        HubMessageType HubMessageType { get; }
         Type MessageType { get; }
-        void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, short> protobufTypeToIndexMap);
-        bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, IReadOnlyList<Type> protobufTypes);
+
+        void WriteMessage(
+            HubMessage message, 
+            IBufferWriter<byte> output, 
+            IReadOnlyDictionary<Type, int> protobufTypeToIndexMap
+        );
+
+        bool TryParseMessage(
+            ref ReadOnlySequence<byte> input, 
+            out HubMessage message,
+            IReadOnlyDictionary<int, Type> protobufIndexToTypeMap
+        );
     }
 }

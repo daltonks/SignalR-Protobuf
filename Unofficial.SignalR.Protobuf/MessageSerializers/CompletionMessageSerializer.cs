@@ -10,7 +10,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
     internal class CompletionMessageSerializer : BaseMessageSerializer
     {
-        public override ProtobufMessageType EnumType => ProtobufMessageType.Completion;
+        public override HubMessageType HubMessageType => HubMessageType.Completion;
         public override Type MessageType => typeof(CompletionMessage);
 
         protected override IEnumerable<object> CreateItems(HubMessage message)

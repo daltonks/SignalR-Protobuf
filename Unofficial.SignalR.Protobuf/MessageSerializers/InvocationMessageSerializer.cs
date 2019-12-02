@@ -10,7 +10,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
     internal class InvocationMessageSerializer : BaseMessageSerializer
     {
-        public override ProtobufMessageType EnumType => ProtobufMessageType.Invocation;
+        public override HubMessageType HubMessageType => HubMessageType.Invocation;
         public override Type MessageType => typeof(InvocationMessage);
 
         protected override IEnumerable<object> CreateItems(HubMessage message)
@@ -19,9 +19,10 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
 
             yield return new InvocationMessageProtobuf
             {
+                Headers = { invocationMessage.Headers.Flatten() },
                 InvocationId = invocationMessage.InvocationId,
                 Target = invocationMessage.Target,
-                Headers = { invocationMessage.Headers.Flatten() }
+                StreamIds = { invocationMessage.StreamIds ?? Enumerable.Empty<string>() }
             };
 
             foreach (var argument in invocationMessage.Arguments)
@@ -38,7 +39,8 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers
             return new InvocationMessage(
                 protobuf.InvocationId, 
                 protobuf.Target, 
-                argumentProtobufs
+                argumentProtobufs,
+                protobuf.StreamIds.ToArray()
             )
             {
                 Headers = protobuf.Headers.Unflatten()

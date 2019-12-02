@@ -11,13 +11,17 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
 {
     internal abstract class BaseMessageSerializer : IMessageSerializer
     {
-        public abstract ProtobufMessageType EnumType { get; }
+        public abstract HubMessageType HubMessageType { get; }
         public abstract Type MessageType { get; }
 
         protected abstract IEnumerable<object> CreateItems(HubMessage message);
         protected abstract HubMessage CreateHubMessage(IReadOnlyList<object> items);
 
-        public void WriteMessage(HubMessage message, IBufferWriter<byte> output, IReadOnlyDictionary<Type, short> protobufTypeToIndexMap)
+        public void WriteMessage(
+            HubMessage message, 
+            IBufferWriter<byte> output, 
+            IReadOnlyDictionary<Type, int> protobufTypeToIndexMap
+        )
         {
             var itemsMetadata = CreateItems(message)
                 .Select(item => ItemMetadata.Create(item, protobufTypeToIndexMap))
@@ -65,7 +69,11 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
             }
         }
         
-        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message, IReadOnlyList<Type> protobufTypes)
+        public bool TryParseMessage(
+            ref ReadOnlySequence<byte> input, 
+            out HubMessage message,
+            IReadOnlyDictionary<int, Type> protobufIndexToTypeMap
+        )
         {
             // 4 bytes are required to read the length of the message
             if (input.Length < 4)
@@ -95,7 +103,7 @@ namespace Unofficial.SignalR.Protobuf.MessageSerializers.Base
 
                     message = CreateHubMessage(
                         metadata.Items
-                            .Select(itemMetadata => itemMetadata.CreateItem(inputStream, protobufTypes))
+                            .Select(itemMetadata => itemMetadata.CreateItem(inputStream, protobufIndexToTypeMap))
                             .ToList()
                     );
                 }

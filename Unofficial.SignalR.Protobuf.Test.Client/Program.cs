@@ -16,7 +16,12 @@ namespace Unofficial.SignalR.Protobuf.Test.Client
             {
                 var client = new HubConnectionBuilder()
                     .WithUrl("http://localhost:57052/realtime")
-                    .AddProtobufProtocol(new [] { typeof(TestMessage) })
+                    .AddProtobufProtocol(
+                        new Dictionary<int, Type>
+                        {
+                            [0] = typeof(TestMessage)
+                        }
+                    )
                     .Build();
 
                 client.On<List<IMessage>>(

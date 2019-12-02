@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Google.Protobuf;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Unofficial.SignalR.Protobuf.MessageSerializers.Base;
-using Unofficial.SignalR.Protobuf.Util;
 
 namespace Unofficial.SignalR.Protobuf.MessageSerializers
 {
     internal class HandshakeRequestMessageSerializer : BaseMessageSerializer
     {
-        public override ProtobufMessageType EnumType => ProtobufMessageType.HandshakeRequest;
+        public override HubMessageType HubMessageType => HubMessageType.HandshakeRequest;
         public override Type MessageType => typeof(HandshakeRequestMessage);
 
         protected override IEnumerable<object> CreateItems(HubMessage message)
