@@ -14,6 +14,7 @@ namespace Unofficial.SignalR.Protobuf
             IReadOnlyDictionary<int, Type> protobufTypes
         ) where TBuilder : ISignalRBuilder
         {
+            builder.Services.RemoveAll<IHubProtocol>();
             builder.Services.TryAddEnumerable(
                 ServiceDescriptor.Singleton<IHubProtocol>(
                     new ProtobufProtocol(protobufTypes)
