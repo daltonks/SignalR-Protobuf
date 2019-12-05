@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>7.2</LangVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Dalton Spillman</Authors>
+    <Company />
+    <Product />
+    <PackageProjectUrl>https://github.com/daltonks/.NET-Core-SignalR-Protobuf</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/daltonks/.NET-Core-SignalR-Protobuf</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>protobuf signalr</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.11.1" />
+    <PackageReference Include="Grpc.Tools" Version="2.25.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="**/*.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="models.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Update="models.proto" GrpcServices="None" Access="Internal" />
+  </ItemGroup>
+
+
+</Project>

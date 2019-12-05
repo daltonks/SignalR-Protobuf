@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Spillman.SignalR.Protobuf\Spillman.SignalR.Protobuf.csproj" />
+    <ProjectReference Include="..\Spillman.SignalR.Protobuf.Example.Core\Spillman.SignalR.Protobuf.Example.Core.csproj" />
+  </ItemGroup>
+
+</Project>
