@@ -34,7 +34,7 @@ services
 
 ## Supported
 - Calls that have any number of Protobuf arguments
-- `List<IMessage>` handling. Note that there is overhead for each item in the list though (int type and byte size), so if polymorphism isn't needed, use a Protobuf model with `repeated` instead.
+- `List<IMessage>` handling. Note that there is overhead for each item in the list though (up to 8 bytes), so if polymorphism isn't needed, use a Protobuf model with `repeated` instead.
 
 ## Not supported
 - Methods that take in or return primitives
