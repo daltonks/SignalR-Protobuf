@@ -8,8 +8,8 @@
     <Authors>Dalton Spillman</Authors>
     <Company />
     <Product />
-    <PackageProjectUrl>https://github.com/daltonks/.NET-Core-SignalR-Protobuf</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/daltonks/.NET-Core-SignalR-Protobuf</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/daltonks/SignalR-Protobuf</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/daltonks/SignalR-Protobuf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>protobuf signalr</PackageTags>
     <Version>1.0.1</Version>
