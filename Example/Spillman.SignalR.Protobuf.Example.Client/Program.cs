@@ -15,7 +15,7 @@ namespace Spillman.SignalR.Protobuf.Example.Client
             try
             {
                 var client = new HubConnectionBuilder()
-                    .WithUrl("http://localhost:63649/realtime")
+                    .WithUrl("http://localhost:55581/realtime")
                     .AddProtobufProtocol(
                         new Dictionary<int, Type>
                         {
