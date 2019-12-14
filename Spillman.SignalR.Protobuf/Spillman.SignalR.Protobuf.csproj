@@ -12,6 +12,8 @@
     <RepositoryUrl>https://github.com/daltonks/.NET-Core-SignalR-Protobuf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>protobuf signalr</PackageTags>
+    <Version>1.0.1</Version>
+    <PackageReleaseNotes>Messages that contain Lists don't fail if the list contains items of types that are not mapped. They are skipped over. This ensures some degree of backwards compatibility</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
