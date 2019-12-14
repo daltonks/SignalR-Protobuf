@@ -79,29 +79,43 @@ namespace Unofficial.SignalR.Protobuf
                     var result = new List<IMessage>(TypesAndSizes.Count / 2);
                     for (var i = 1; i < TypesAndSizes.Count; i += 2)
                     {
-                        result.Add(CreateSingular(i));
+                        var typeIndex = TypesAndSizes[i];
+                        var sizeBytes = TypesAndSizes[i + 1];
+
+                        switch (typeIndex)
+                        {
+                            case -1:
+                                result.Add(null);
+                                break;
+                            default:
+                                // Only add the item to the list if it is mapped.
+                                // This ensures backwards-compatibility
+                                if (protobufIndexToTypeMap.TryGetValue(typeIndex, out var type))
+                                {
+                                    var protobufModel = (IMessage) Activator.CreateInstance(type);
+                                    protobufModel.MergeFrom(stream, sizeBytes);
+                                    result.Add(protobufModel);
+                                }
+
+                                break;
+                        }
                     }
                     return result;
                 }
                 default:
                 {
-                    return CreateSingular(0);
-                }
-            }
+                    var typeIndex = TypesAndSizes[0];
+                    var sizeBytes = TypesAndSizes[1];
 
-            IMessage CreateSingular(int typesAndSizesIndex)
-            {
-                var typeIndex = TypesAndSizes[typesAndSizesIndex];
-                var sizeBytes = TypesAndSizes[typesAndSizesIndex + 1];
-
-                switch (typeIndex)
-                {
-                    case -1:
-                        return null;
-                    default:
-                        var protobufModel = (IMessage) Activator.CreateInstance(protobufIndexToTypeMap[typeIndex]);
-                        protobufModel.MergeFrom(stream, sizeBytes);
-                        return protobufModel;
+                    switch (typeIndex)
+                    {
+                        case -1:
+                            return null;
+                        default:
+                            var protobufModel = (IMessage) Activator.CreateInstance(protobufIndexToTypeMap[typeIndex]);
+                            protobufModel.MergeFrom(stream, sizeBytes);
+                            return protobufModel;
+                    }
                 }
             }
         }
