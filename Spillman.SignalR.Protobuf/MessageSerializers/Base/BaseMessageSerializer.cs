@@ -109,8 +109,16 @@ namespace Spillman.SignalR.Protobuf.MessageSerializers.Base
                     {
                         try
                         {
-                            var item = itemMetadata.CreateItem(inputStream, protobufIndexToTypeMap);
-                            items.Add(item);
+                            var (error, item) = itemMetadata.CreateItem(inputStream, protobufIndexToTypeMap);
+                            if (error == null)
+                            {
+                                items.Add(item);
+                            }
+                            else
+                            {
+                                bindingException = new Exception(error);
+                                break;
+                            }
                         }
                         catch (Exception ex)
                         {
