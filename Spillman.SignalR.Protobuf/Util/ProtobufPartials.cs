@@ -70,7 +70,7 @@ namespace Unofficial.SignalR.Protobuf
             }
         }
 
-        public object CreateItem(Stream stream, IReadOnlyDictionary<int, Type> protobufIndexToTypeMap)
+        public (string error, object item) CreateItem(Stream stream, IReadOnlyDictionary<int, Type> protobufIndexToTypeMap)
         {
             switch (TypesAndSizes[0])
             {
@@ -100,7 +100,8 @@ namespace Unofficial.SignalR.Protobuf
                                 break;
                         }
                     }
-                    return result;
+
+                    return (error: null, item: result);
                 }
                 default:
                 {
@@ -110,11 +111,18 @@ namespace Unofficial.SignalR.Protobuf
                     switch (typeIndex)
                     {
                         case -1:
-                            return null;
+                            return (error: null, item: null);
                         default:
-                            var protobufModel = (IMessage) Activator.CreateInstance(protobufIndexToTypeMap[typeIndex]);
-                            protobufModel.MergeFrom(stream, sizeBytes);
-                            return protobufModel;
+                            if (protobufIndexToTypeMap.TryGetValue(typeIndex, out var protoType))
+                            {
+                                var protobufModel = (IMessage) Activator.CreateInstance(protoType);
+                                protobufModel.MergeFrom(stream, sizeBytes);
+                                return (error: null, item: protobufModel);
+                            }
+                            else
+                            {
+                                return (error: $"Type index {typeIndex} was not found", item: null);
+                            }
                     }
                 }
             }
