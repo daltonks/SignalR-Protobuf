@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.ExceptionServices;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Spillman.SignalR.Protobuf.MessageSerializers.Base;
 using Spillman.SignalR.Protobuf.Util;
@@ -32,18 +31,9 @@ namespace Spillman.SignalR.Protobuf.MessageSerializers
             }
         }
 
-        protected override HubMessage CreateHubMessage(IReadOnlyList<object> items, Exception bindingException)
+        protected override HubMessage CreateHubMessage(IReadOnlyList<object> items)
         {
             var protobuf = (StreamInvocationMessageProtobuf) items.First();
-
-            if (bindingException != null)
-            {
-                return new StreamBindingFailureMessage(
-                    protobuf.InvocationId,
-                    ExceptionDispatchInfo.Capture(bindingException)
-                );
-            }
-
             var argumentProtobufs = items.Skip(1).ToArray();
 
             return new StreamInvocationMessage(

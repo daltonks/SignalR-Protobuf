@@ -12,18 +12,18 @@
     <RepositoryUrl>https://github.com/daltonks/SignalR-Protobuf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>protobuf signalr</PackageTags>
-    <Version>1.0.2</Version>
-    <PackageReleaseNotes>Exceptions are no longer thrown just to be immediately caught when a type index is received but not mapped to a type.</PackageReleaseNotes>
+    <Version>1.0.3</Version>
+    <PackageReleaseNotes>Turned unknown types into null items instead of creating an exception. Bumped dependencies.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.11.1" />
-    <PackageReference Include="Grpc.Tools" Version="2.25.0">
+    <PackageReference Include="Google.Protobuf" Version="3.12.3" />
+    <PackageReference Include="Grpc.Tools" Version="2.29.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="3.1.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="3.1.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.4" />
   </ItemGroup>
 
   <ItemGroup>
