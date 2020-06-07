@@ -12,8 +12,8 @@
     <RepositoryUrl>https://github.com/daltonks/SignalR-Protobuf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>protobuf signalr</PackageTags>
-    <Version>1.0.3</Version>
-    <PackageReleaseNotes>Turned unknown types into null items instead of creating an exception. Bumped dependencies.</PackageReleaseNotes>
+    <Version>1.0.4</Version>
+    <PackageReleaseNotes>MemoryStream.Seek when coming across an unmapped type</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
