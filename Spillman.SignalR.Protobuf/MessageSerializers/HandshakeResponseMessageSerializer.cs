@@ -22,7 +22,7 @@ namespace Spillman.SignalR.Protobuf.MessageSerializers
             };
         }
 
-        protected override HubMessage CreateHubMessage(IReadOnlyList<object> items, Exception bindingException)
+        protected override HubMessage CreateHubMessage(IReadOnlyList<object> items)
         {
             var protobuf = (HandshakeResponseMessageProtobuf) items.Single();
             return new HandshakeResponseMessage(protobuf.Error);

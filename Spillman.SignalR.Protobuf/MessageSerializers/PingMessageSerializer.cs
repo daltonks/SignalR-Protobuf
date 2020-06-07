@@ -15,7 +15,7 @@ namespace Spillman.SignalR.Protobuf.MessageSerializers
             yield break;
         }
 
-        protected override HubMessage CreateHubMessage(IReadOnlyList<object> items, Exception bindingException)
+        protected override HubMessage CreateHubMessage(IReadOnlyList<object> items)
         {
             return PingMessage.Instance;
         }

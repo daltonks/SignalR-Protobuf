@@ -16,7 +16,7 @@ namespace Spillman.SignalR.Protobuf.MessageSerializers.Base
         public abstract Type MessageType { get; }
 
         protected abstract IEnumerable<object> CreateItems(HubMessage message);
-        protected abstract HubMessage CreateHubMessage(IReadOnlyList<object> items, Exception bindingException);
+        protected abstract HubMessage CreateHubMessage(IReadOnlyList<object> items);
 
         public void WriteMessage(
             HubMessage message,
@@ -92,7 +92,8 @@ namespace Spillman.SignalR.Protobuf.MessageSerializers.Base
 
             var protobufInput = input.Slice(4);
 
-            var byteArray = ArrayPool<byte>.Shared.Rent((int) protobufInput.Length);
+            var arrayPool = ArrayPool<byte>.Shared;
+            var byteArray = arrayPool.Rent((int) protobufInput.Length);
             try
             {
                 protobufInput.CopyTo(byteArray);
@@ -102,32 +103,14 @@ namespace Spillman.SignalR.Protobuf.MessageSerializers.Base
                     var metadata = new MessageMetadata();
                     metadata.MergeFixedDelimitedFrom(inputStream);
 
-                    Exception bindingException = null;
-
-                    var items = new List<object>();
+                    var items = new List<object>(metadata.Items.Count);
                     foreach (var itemMetadata in metadata.Items)
                     {
-                        try
-                        {
-                            var (error, item) = itemMetadata.CreateItem(inputStream, protobufIndexToTypeMap);
-                            if (error == null)
-                            {
-                                items.Add(item);
-                            }
-                            else
-                            {
-                                bindingException = new Exception(error);
-                                break;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            bindingException = ex;
-                            break;
-                        }
+                        var item = itemMetadata.CreateItem(inputStream, protobufIndexToTypeMap);
+                        items.Add(item);
                     }
 
-                    message = CreateHubMessage(items, bindingException);
+                    message = CreateHubMessage(items);
                 }
 
                 input = input.Slice(totalByteSize);
@@ -136,7 +119,7 @@ namespace Spillman.SignalR.Protobuf.MessageSerializers.Base
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(byteArray);
+                arrayPool.Return(byteArray);
             }
         }
     }
