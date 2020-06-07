@@ -96,7 +96,10 @@ namespace Unofficial.SignalR.Protobuf
                                     protobufModel.MergeFrom(stream, sizeBytes);
                                     result.Add(protobufModel);
                                 }
-
+                                else
+                                {
+                                    stream.Seek(sizeBytes, SeekOrigin.Current);
+                                }
                                 break;
                         }
                     }
@@ -121,6 +124,7 @@ namespace Unofficial.SignalR.Protobuf
                             }
                             else
                             {
+                                stream.Seek(sizeBytes, SeekOrigin.Current);
                                 return null;
                             }
                     }
