@@ -1,12 +1,12 @@
 # C# SignalR Protobuf Protocol
 
-## [Nuget package](https://www.nuget.org/packages/Spillman.SignalR.Protobuf)
+[![NuGet](https://img.shields.io/nuget/v/Spillman.SignalR.Protobuf?label=Spillman.SignalR.Protobuf)](https://www.nuget.org/packages/Spillman.SignalR.Protobuf)
 
 ## To use
 Call `SignalRBuilderExtensions.AddProtobufProtocol` with the `Types` of the Protobuf messages that you wish to serialize. The types need to be specified up-front in order to know which type to use when deserializing. The server and client must supply the same types with the same indexes for deserializing to work properly.
 
 ### Client example
-```
+```cs
 var client = new HubConnectionBuilder()
     ...
     .AddProtobufProtocol(
@@ -20,7 +20,7 @@ var client = new HubConnectionBuilder()
 ```
 
 ### Server example
-```
+```cs
 services
     .AddSignalR() // or AddAzureSignalR()
     .AddProtobufProtocol(
