@@ -4,7 +4,7 @@
 
 A SignalR hub protocol that puts Protobuf on the wire in place of JSON or MessagePack.
 
-Hub method arguments are [Google.Protobuf](https://www.nuget.org/packages/Google.Protobuf) messages and get sent in their binary form. If your models already live in `.proto` files, this saves you from translating them into something SignalR knows how to serialize, and it keeps messages small — which is worth it when you are sending a lot of them.
+Hub method arguments are [Google.Protobuf](https://www.nuget.org/packages/Google.Protobuf) messages, sent in their binary form. If your models already live in `.proto` files, you don't have to translate them into something SignalR can serialize. Messages come out smaller too, which matters if you send a lot of them.
 
 ## Install
 
@@ -16,7 +16,7 @@ Both ends of the connection need the package, the generated Protobuf types, and 
 
 ## The type map
 
-Deserializing a message means knowing which type to deserialize into. The wire format identifies types by an index rather than by name, so the indexes have to be agreed on ahead of time: **the server and the client must map the same index to the same type.**
+Deserializing a message means knowing which type to deserialize into. The wire format identifies types by an index instead of by name, so both ends have to agree on the indexes up front: **the server and the client must map the same index to the same type.**
 
 Put the map somewhere both projects can see it:
 
@@ -49,17 +49,17 @@ var client = new HubConnectionBuilder()
     .Build();
 ```
 
-`AddProtobufProtocol` clears any other registered `IHubProtocol`, so the connection speaks Protobuf and nothing else.
+`AddProtobufProtocol` removes any other registered `IHubProtocol`.
 
 ## What you can send
 
 - Hub methods taking any number of Protobuf arguments.
 - `List<IMessage>`, when a call needs to carry a mix of message types. Every item costs up to 8 extra bytes for its type index and size, so if you don't need the polymorphism, a message with a `repeated` field is cheaper.
-- Messages whose type the receiver doesn't have in its map. Those arrive as `null` items rather than throwing, so a client on an older map can still handle the calls it does understand.
+- Messages whose type the receiver doesn't have in its map. Those come through as `null` items instead of throwing, so a client on an older map can still handle the calls it does understand.
 
 What you can't send:
 
-- Methods that take or return primitives — `int`, `string`, and friends. Wrap them in a Protobuf message.
+- Methods that take or return primitives like `int` or `string`. Wrap them in a Protobuf message.
 
 ## Wire format
 
@@ -76,7 +76,7 @@ Writes rent their buffer from `ArrayPool<byte>`, and reads seek past items whose
 
 ## Example
 
-[`Example/`](Example) holds a server and a console client sharing a `.proto` file. Start the server, then the client, and they exchange a single message and a list of messages.
+[`Example/`](Example) has a server and a console client sharing a `.proto` file. Start the server, then the client. They exchange a single message and a list of messages.
 
 ## Versions
 
@@ -85,7 +85,7 @@ Writes rent their buffer from `ArrayPool<byte>`, and reads seek past items whose
 | 2.x | .NET 10 |
 | 1.x | .NET Standard 2.0, ASP.NET Core SignalR 3.1 |
 
-The API is the same in both. If you are on an older runtime, pin to 1.x.
+The API is the same in both. Pin to 1.x if you're on an older runtime.
 
 ## License
 
