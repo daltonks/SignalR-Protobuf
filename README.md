@@ -82,8 +82,10 @@ Writes rent their buffer from `ArrayPool<byte>`, and reads seek past items whose
 
 | Package | Targets |
 | --- | --- |
-| 1.x (`master`) | .NET Standard 2.0, ASP.NET Core SignalR 3.1 |
-| 2.x (`net10`) | .NET 10 |
+| 2.x | .NET 10 |
+| 1.x | .NET Standard 2.0, ASP.NET Core SignalR 3.1 |
+
+The API is the same in both. If you are on an older runtime, pin to 1.x.
 
 ## License
 
