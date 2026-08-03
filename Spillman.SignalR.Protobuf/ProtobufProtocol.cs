@@ -105,7 +105,11 @@ namespace Spillman.SignalR.Protobuf
         public string Name => nameof(ProtobufProtocol);
         public int Version => 3;
         public TransferFormat TransferFormat => TransferFormat.Binary;
-        public bool IsVersionSupported(int version) => version == Version;
+
+        // Accept older handshake versions, not just our own. The JavaScript
+        // client sends version 1 unless stateful reconnect is turned on, so
+        // requiring an exact match locks out every JS client.
+        public bool IsVersionSupported(int version) => version <= Version;
         
         public ReadOnlyMemory<byte> GetMessageBytes(HubMessage message)
         {

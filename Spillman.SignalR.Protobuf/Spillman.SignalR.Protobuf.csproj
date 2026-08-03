@@ -11,7 +11,7 @@
     <RepositoryUrl>https://github.com/daltonks/SignalR-Protobuf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>protobuf signalr</PackageTags>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <PackageReleaseNotes>Target .NET 10; update SignalR and Google.Protobuf dependencies</PackageReleaseNotes>
   </PropertyGroup>
 
